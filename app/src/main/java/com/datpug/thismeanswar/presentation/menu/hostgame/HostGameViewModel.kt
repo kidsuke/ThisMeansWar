@@ -1,5 +1,6 @@
 package com.datpug.thismeanswar.presentation.menu.hostgame
 
+import android.databinding.ObservableArrayList
 import android.databinding.ObservableBoolean
 import com.datpug.androidcore.app.mvvm.MVVMViewModel
 import com.datpug.thismeanswar.model.Player
@@ -16,6 +17,7 @@ import javax.inject.Inject
 class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerService): MVVMViewModel {
 
     val showLoadingSpinner: ObservableBoolean = ObservableBoolean()
+    val playerEntries: ObservableArrayList<Player> = ObservableArrayList()
 
     var navigator: MenuNavigator? = null
 
@@ -26,15 +28,14 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
     override fun onCreated() {
         multiplayerService.startHosting()
 
-
-        setupView()
+        setupView()val i = com.datpug.thismeanswar.BR.data
     }
 
     override fun onResume() {
         multiplayerService.getPlayers()
         .subscribeBy (
             onNext = {
-                players = players.plus(it)
+                playerEntries.add(it)
             },
             onComplete = {
 

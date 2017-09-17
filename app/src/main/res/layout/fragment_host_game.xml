@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
         <import type="android.view.View"/>
@@ -17,14 +18,16 @@
             style="?android:attr/progressBarStyleLarge"
             android:visibility="@{viewModel.showLoadingSpinner? View.VISIBLE : View.GONE}"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true">
         </ProgressBar>
 
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/playerList"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:entries="@{viewModel.playerEntries}"
+            app:layout="@{@layout/fragment_host_game_cell}"/>
     </RelativeLayout>
 
 </layout>
