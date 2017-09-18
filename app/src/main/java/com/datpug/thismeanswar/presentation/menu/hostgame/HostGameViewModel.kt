@@ -17,13 +17,15 @@ import javax.inject.Inject
  * Created by longvu on 16/09/2017.
  */
 class HostGameViewModel @Inject constructor(private val multiplayerService: MultiplayerService): MVVMViewModel {
-
+    // Binding fields for layout
     val showLoadingSpinner: ObservableBoolean = ObservableBoolean()
     val playersLeft: ObservableField<String> = ObservableField<String>()
     val playerEntries: ObservableArrayList<Player> = ObservableArrayList()
 
+    // Public fields
     var navigator: MenuNavigator? = null
 
+    // Local fields
     private val totalPlayers = multiplayerService.totalPlayers
     private val disposables = CompositeDisposable()
     private var waitingForPlayers: Boolean = true
