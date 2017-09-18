@@ -21,6 +21,8 @@ class MultiplayerServiceImpl(private val networkService: NetworkService): Multip
     private var connections: List<Connection> = listOf()
     private var streamBuffer: ByteArray? = null // Byte storage for the stream
 
+    private val connectedPlayersObservable = Observable.create<Player> {  }
+
     override fun startHostingGame(): Boolean {
         if (networkService.startHosting()) {
             // Start waiting for players
@@ -103,7 +105,21 @@ class MultiplayerServiceImpl(private val networkService: NetworkService): Multip
 //        ).start()
     }
 
-    override fun getConnectedPlayers(): Observable<Player> = connectedPlayersSubject
+    override fun getConnectedPlayer(): Observable<Player> {
+        return Observable.create { emitter ->
+            while (playerLeft > 0) {
+                val connection: Connection? = networkService.getConnection()
 
-    override fun getDisconnectedPlayers(): Observable<Player> = disconnectedPlayersSubject
+                if (connection != null) {
+                    addAndListenToConnection(connection)
+                    // Notify subscribers this connection has been connected
+                    connectedPlayersSubject.onNext(Player(connection.connectionId))
+                    // Update number of players left
+                    playerLeft--
+                }
+            }
+        }
+    }
+
+    override fun getDisconnectedPlayer(): Observable<Player> = disconnectedPlayersSubject
 }

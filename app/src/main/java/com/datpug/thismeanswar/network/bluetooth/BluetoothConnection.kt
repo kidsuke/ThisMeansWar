@@ -17,6 +17,8 @@ class BluetoothConnection(val socket: BluetoothSocket): Connection {
         get() = socket.inputStream
     override val outputStream: OutputStream
         get() = socket.outputStream
+    override val isConnected: Boolean
+        get() = socket.isConnected
 
     override fun disconnect() {
         try {

@@ -32,7 +32,7 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
 
     override fun onResume() {
         // Subscribe to connected players stream
-        multiplayerService.getConnectedPlayers()
+        multiplayerService.getConnectedPlayer()
         .subscribeBy (
             onNext = { playerEntries.add(it) },
             onComplete = {
@@ -44,7 +44,7 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
         .addTo(disposables)
 
         // Subscribe to disconnected players stream
-        multiplayerService.getDisconnectedPlayers()
+        multiplayerService.getDisconnectedPlayer()
         .subscribeBy (
             onNext = {
                 val player: Player? = playerEntries.find { _player -> _player.playerId == it.playerId }

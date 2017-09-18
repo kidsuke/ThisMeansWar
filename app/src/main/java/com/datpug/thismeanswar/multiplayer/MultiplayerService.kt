@@ -14,6 +14,6 @@ interface MultiplayerService {
     fun startFindingGame()
     fun stopFindingGame()
     fun waitingForPlayers()
-    fun getConnectedPlayers(): Observable<Player>
-    fun getDisconnectedPlayers(): Observable<Player>
+    fun getConnectedPlayer(): Observable<Player>
+    fun getDisconnectedPlayer(): Observable<Player>
 }

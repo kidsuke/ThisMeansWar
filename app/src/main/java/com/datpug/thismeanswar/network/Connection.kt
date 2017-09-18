@@ -10,6 +10,7 @@ interface Connection {
     val connectionId: String
     val inputStream: InputStream
     val outputStream: OutputStream
+    val isConnected: Boolean
 
     fun disconnect()
 }
