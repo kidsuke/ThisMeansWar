@@ -2,6 +2,7 @@ package com.datpug.androidcore.app
 
 import android.content.Intent
 import android.content.res.Resources
+import android.os.Bundle
 import android.support.annotation.LayoutRes
 import android.support.v4.app.Fragment
 import android.support.v7.app.AppCompatActivity
@@ -21,6 +22,11 @@ abstract class AbstractActivity : AppCompatActivity() {
     private var fragments = listOf<Fragment>()
     private val topFragment: Fragment?
         get() = fragments.lastOrNull()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_base)
+    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {

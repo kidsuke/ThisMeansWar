@@ -13,43 +13,61 @@ import java.io.IOException
  */
 class MultiplayerServiceImpl(private val networkService: NetworkService): MultiplayerService {
     override val totalPlayers: Int = 4
+    override val isHostingGame: Boolean
+        get() = networkService.isHosting
     var playerLeft: Int = totalPlayers
         private set
 
-    private val connectedPlayersSubject: PublishSubject<Player> = PublishSubject.create()
-    private val disconnectedPlayersSubject: PublishSubject<Player> = PublishSubject.create()
     private var connections: List<Connection> = listOf()
     private var streamBuffer: ByteArray? = null // Byte storage for the stream
 
-    private val connectedPlayersObservable = Observable.create<Player> {  }
+    private val connectedPlayersObservable = Observable.create<Player> { emitter ->
+        try {
+            while (networkService.isHosting) {
+                if (playerLeft > 0) {
+                    val connection: Connection? = networkService.getConnection()
 
-    override fun startHostingGame(): Boolean {
-        if (networkService.startHosting()) {
-            // Start waiting for players
-            Thread(
-                Runnable {
-                    while (playerLeft > 0 && networkService.isHosting) {
-                        val connection: Connection? = networkService.getConnection()
-
-                        if (connection != null) {
-                            addAndListenToConnection(connection)
-                            // Notify subscribers this connection has been connected
-                            connectedPlayersSubject.onNext(Player(connection.connectionId))
-                            // Update number of players left
-                            playerLeft--
-                        }
+                    if (connection != null) {
+                        // Add to the active connections
+                        connections = connections.plus(connection)
+                        // Notify subscribers this connection has been connected
+                        emitter.onNext(Player(connection.connectionId))
+                        // Update number of players left
+                        playerLeft--
                     }
                 }
-            ).start()
+            }
+            emitter.onComplete()
+        } catch (e: Exception) {
+            Log.e(MultiplayerServiceImpl::class.qualifiedName, "Error when getting connected player", e)
+            emitter.onError(e)
         }
-
-        return networkService.isHosting
     }
 
-    override fun stopHostingGame(): Boolean {
-        networkService.stopHosting()
-        return !networkService.isHosting
+    private val disconnectedPlayersObservable = Observable.create<Player> { emitter ->
+        try {
+            while (networkService.isHosting) {
+                connections.forEach {
+                    if (!it.isConnected) {
+                        // Remove from the active connections
+                        connections = connections.filterNot { cnt -> cnt.connectionId == it.connectionId }
+                        // Notify subscribers this connection has been connected
+                        emitter.onNext(Player(it.connectionId))
+                        // Update number of players left
+                        playerLeft--
+                    }
+                }
+            }
+            emitter.onComplete()
+        } catch (e: Exception) {
+            Log.e(MultiplayerServiceImpl::class.qualifiedName, "Error when getting connected player", e)
+            emitter.onError(e)
+        }
     }
+
+    override fun startHostingGame(): Boolean = networkService.startHosting()
+
+    override fun stopHostingGame(): Boolean = networkService.stopHosting()
 
     override fun startFindingGame() {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -58,68 +76,7 @@ class MultiplayerServiceImpl(private val networkService: NetworkService): Multip
     override fun stopFindingGame() {
     }
 
-    override fun waitingForPlayers() {
-        // Start waiting for players
-        Thread(
-            Runnable {
-                while (playerLeft > 0) {
-                    val connection: Connection? = networkService.getConnection()
+    override fun getConnectedPlayer(): Observable<Player> = connectedPlayersObservable
 
-                    if (connection != null) {
-                        addAndListenToConnection(connection)
-                        // Notify subscribers this connection has been connected
-                        connectedPlayersSubject.onNext(Player(connection.connectionId))
-                        // Update number of players left
-                        playerLeft--
-                    }
-                }
-            }
-        ).start()
-    }
-
-    private fun addAndListenToConnection(connection: Connection) {
-        // Keep track of the connection
-        connections = connections.plus(connection)
-
-        // Start listening to the connection
-//        Thread(
-//            Runnable {
-//                streamBuffer = ByteArray(1024) // Buffer with appropriate size
-//                var numBytes: Int // Bytes returned from read()
-//
-//                while (true) {
-//                    try {
-//                        numBytes = connection.inputStream.read(streamBuffer)
-//                        if (numBytes > 0) {
-//                            // OnNext(ByteArray)
-//                        }
-//                    } catch (ioe: IOException) {
-//                        Log.d(MultiplayerServiceImpl::class.qualifiedName, "Connection has been disconnected", ioe)
-//                        // Notify subscribers that this connection has been disconnected
-//                        disconnectedPlayersSubject.onNext(Player(connection.connectionId))
-//                        // Update number of players left
-//                        playerLeft++
-//                    }
-//                }
-//            }
-//        ).start()
-    }
-
-    override fun getConnectedPlayer(): Observable<Player> {
-        return Observable.create { emitter ->
-            while (playerLeft > 0) {
-                val connection: Connection? = networkService.getConnection()
-
-                if (connection != null) {
-                    addAndListenToConnection(connection)
-                    // Notify subscribers this connection has been connected
-                    connectedPlayersSubject.onNext(Player(connection.connectionId))
-                    // Update number of players left
-                    playerLeft--
-                }
-            }
-        }
-    }
-
-    override fun getDisconnectedPlayer(): Observable<Player> = disconnectedPlayersSubject
+    override fun getDisconnectedPlayer(): Observable<Player> = disconnectedPlayersObservable
 }

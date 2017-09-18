@@ -8,12 +8,12 @@ import io.reactivex.Observable
  */
 interface MultiplayerService {
     val totalPlayers: Int
+    val isHostingGame: Boolean
 
     fun startHostingGame(): Boolean
     fun stopHostingGame(): Boolean
     fun startFindingGame()
     fun stopFindingGame()
-    fun waitingForPlayers()
     fun getConnectedPlayer(): Observable<Player>
     fun getDisconnectedPlayer(): Observable<Player>
 }

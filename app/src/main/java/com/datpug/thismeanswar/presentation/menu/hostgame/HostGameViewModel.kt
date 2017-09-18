@@ -2,6 +2,8 @@ package com.datpug.thismeanswar.presentation.menu.hostgame
 
 import android.databinding.ObservableArrayList
 import android.databinding.ObservableBoolean
+import android.databinding.ObservableField
+import android.databinding.ObservableInt
 import com.datpug.androidcore.app.mvvm.MVVMViewModel
 import com.datpug.thismeanswar.model.Player
 import com.datpug.thismeanswar.multiplayer.MultiplayerService
@@ -14,19 +16,20 @@ import javax.inject.Inject
 /**
  * Created by longvu on 16/09/2017.
  */
-class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerService): MVVMViewModel {
+class HostGameViewModel @Inject constructor(private val multiplayerService: MultiplayerService): MVVMViewModel {
 
     val showLoadingSpinner: ObservableBoolean = ObservableBoolean()
+    val playersLeft: ObservableField<String> = ObservableField<String>()
     val playerEntries: ObservableArrayList<Player> = ObservableArrayList()
 
     var navigator: MenuNavigator? = null
-    val totalPlayers = multiplayerService.totalPlayers
 
+    private val totalPlayers = multiplayerService.totalPlayers
     private val disposables = CompositeDisposable()
     private var waitingForPlayers: Boolean = true
 
     override fun onCreated() {
-        multiplayerService.startHostingGame()
+        waitingForPlayers = multiplayerService.startHostingGame()
         setupView()
     }
 
@@ -34,7 +37,10 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
         // Subscribe to connected players stream
         multiplayerService.getConnectedPlayer()
         .subscribeBy (
-            onNext = { playerEntries.add(it) },
+            onNext = {
+                playerEntries.add(it)
+                setupView()
+            },
             onComplete = {
                 waitingForPlayers = false
                 setupView()
@@ -49,6 +55,7 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
             onNext = {
                 val player: Player? = playerEntries.find { _player -> _player.playerId == it.playerId }
                 if (player != null) playerEntries.remove(player)
+                setupView()
             },
             onComplete = {
                 waitingForPlayers = false
@@ -65,5 +72,6 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
 
     override fun setupView() {
         showLoadingSpinner.set(waitingForPlayers)
+        playersLeft.set("${playerEntries.size} / $totalPlayers")
     }
 }

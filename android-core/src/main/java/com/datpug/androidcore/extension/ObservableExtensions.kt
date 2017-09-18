@@ -12,11 +12,11 @@ import io.reactivex.Observable
  * Created by long.vu on 8/3/2017.
  */
 
-fun <T> ObservableField<T>.toRxObservable () : Observable<T> {
+fun <T> ObservableField<T>.toRxObservable(): Observable<T> {
     return ObservableFieldRx(this)
 }
 
-fun ObservableBoolean.toRxObservable () : Observable<Boolean> {
+fun ObservableBoolean.toRxObservable(): Observable<Boolean> {
     return ObservableBooleanRx(this)
 }
 

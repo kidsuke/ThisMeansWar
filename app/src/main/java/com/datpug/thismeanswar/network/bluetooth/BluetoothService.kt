@@ -34,26 +34,36 @@ class BluetoothService @Inject constructor(bluetoothManager: BluetoothManager): 
     private var btConnections: List<BluetoothConnection> = listOf()
 
     override fun startHosting(): Boolean {
-        // Open bluetooth server socket
-        return try {
-            btServerSocket = btAdapter?.listenUsingInsecureRfcommWithServiceRecord("", uuid)
-            isHosting = true
-            true // Indicate start hosting successfully
-        } catch (ioe: IOException) {
-            Log.e(BluetoothService::class.qualifiedName, "Could not open bluetooth server socket", ioe)
-            false // Indicate fail to start hosting
+        return if (!isHosting) {
+            // If there is no hosting yet, start hosting by opening bluetooth server socket
+            try {
+                btServerSocket = btAdapter?.listenUsingInsecureRfcommWithServiceRecord("", uuid)
+                isHosting = true
+                true // Indicate start hosting successfully
+            } catch (ioe: IOException) {
+                Log.e(BluetoothService::class.qualifiedName, "Could not open bluetooth server socket", ioe)
+                false // Indicate fail to start hosting
+            }
+        } else {
+            // Else return isHosting to prevent hosting twice
+            isHosting
         }
     }
 
     override fun stopHosting(): Boolean {
-        // Close bluetooth server socket
-        return try {
-            btServerSocket?.close()
-            isHosting = false
-            true // Indicate stop hosting successfully
-        } catch (ioe: IOException) {
-            Log.e(BluetoothService::class.qualifiedName, "Could not close bluetooth server socket", ioe)
-            false // Indicate fail to stop hosting
+        return if (isHosting) {
+            // If there is already a hosting, stop hosting by closing bluetooth server socket
+            try {
+                btServerSocket?.close()
+                isHosting = false
+                true // Indicate stop hosting successfully
+            } catch (ioe: IOException) {
+                Log.e(BluetoothService::class.qualifiedName, "Could not close bluetooth server socket", ioe)
+                false // Indicate fail to stop hosting
+            }
+        } else {
+            // Else return isHosting to prevent closing twice
+            !isHosting
         }
     }
 
