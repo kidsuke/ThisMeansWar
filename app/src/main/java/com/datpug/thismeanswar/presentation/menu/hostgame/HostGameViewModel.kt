@@ -20,25 +20,39 @@ class HostGameViewModel @Inject constructor(val multiplayerService: MultiplayerS
     val playerEntries: ObservableArrayList<Player> = ObservableArrayList()
 
     var navigator: MenuNavigator? = null
+    val totalPlayers = multiplayerService.totalPlayers
 
-    private var players: List<Player> = listOf()
     private val disposables = CompositeDisposable()
     private var waitingForPlayers: Boolean = true
 
     override fun onCreated() {
-        multiplayerService.startHosting()
-
-        setupView()val i = com.datpug.thismeanswar.BR.data
+        multiplayerService.startHostingGame()
+        setupView()
     }
 
     override fun onResume() {
-        multiplayerService.getPlayers()
+        // Subscribe to connected players stream
+        multiplayerService.getConnectedPlayers()
+        .subscribeBy (
+            onNext = { playerEntries.add(it) },
+            onComplete = {
+                waitingForPlayers = false
+                setupView()
+            },
+            onError = {}
+        )
+        .addTo(disposables)
+
+        // Subscribe to disconnected players stream
+        multiplayerService.getDisconnectedPlayers()
         .subscribeBy (
             onNext = {
-                playerEntries.add(it)
+                val player: Player? = playerEntries.find { _player -> _player.playerId == it.playerId }
+                if (player != null) playerEntries.remove(player)
             },
             onComplete = {
-
+                waitingForPlayers = false
+                setupView()
             },
             onError = {}
         )

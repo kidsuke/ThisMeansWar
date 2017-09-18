@@ -1,12 +1,9 @@
 package com.datpug.thismeanswar.presentation.menu
 
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import com.datpug.androidcore.app.BaseActivity
+import com.datpug.androidcore.app.AbstractActivity
 
-import com.datpug.thismeanswar.R
-
-class MenuActivity : BaseActivity(), MenuNavigator {
+class MenuActivity : AbstractActivity(), MenuNavigator {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

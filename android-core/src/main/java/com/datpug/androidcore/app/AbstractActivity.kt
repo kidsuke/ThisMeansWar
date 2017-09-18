@@ -16,9 +16,7 @@ import kotlin.reflect.full.createInstance
  * @author longv
  * Created on 05-Aug-17.
  */
-typealias GeneralBaseFragment = BaseFragment<*>
-
-abstract class BaseActivity : AppCompatActivity() {
+abstract class AbstractActivity : AppCompatActivity() {
 
     private var fragments = listOf<Fragment>()
     private val topFragment: Fragment?
@@ -94,7 +92,7 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if ((topFragment as? GeneralBaseFragment)?.onBackPressed() == true) return
+        if ((topFragment as? GeneralAbstractFragment)?.onBackPressed() == true) return
 
         // End this activity if there is only one fragment left
         if (fragments.size == 1) finish()

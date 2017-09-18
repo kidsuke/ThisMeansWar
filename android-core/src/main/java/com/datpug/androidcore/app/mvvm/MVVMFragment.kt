@@ -3,15 +3,15 @@ package com.datpug.androidcore.app.mvvm
 import android.os.Bundle
 import android.view.View
 
-import com.datpug.androidcore.app.BaseActivity
-import com.datpug.androidcore.app.BaseFragment
+import com.datpug.androidcore.app.AbstractActivity
+import com.datpug.androidcore.app.AbstractFragment
 
 import io.reactivex.disposables.CompositeDisposable
 
 /**
  * Created by long.vu on 8/18/2017.
  */
-abstract class MVVMFragment<out A : BaseActivity, out VM : MVVMViewModel> : BaseFragment<A>(), MVVMView<VM> {
+abstract class MVVMFragment<out A : AbstractActivity, out VM : MVVMViewModel> : AbstractFragment<A>(), MVVMView<VM> {
 
     protected val disposables: CompositeDisposable = CompositeDisposable()
 

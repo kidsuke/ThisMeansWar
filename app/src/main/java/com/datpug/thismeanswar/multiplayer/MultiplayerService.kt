@@ -7,11 +7,13 @@ import io.reactivex.Observable
  * Created by longvu on 14/09/2017.
  */
 interface MultiplayerService {
-    fun startHosting(): Boolean
-    fun stopHosting(): Boolean
-    fun startFindingMatch()
-    fun stopFindingMatch()
-    fun getPlayers(): Observable<Player>
-    fun addPlayer(player: Player)
-    fun removePlayer(player: Player)
+    val totalPlayers: Int
+
+    fun startHostingGame(): Boolean
+    fun stopHostingGame(): Boolean
+    fun startFindingGame()
+    fun stopFindingGame()
+    fun waitingForPlayers()
+    fun getConnectedPlayers(): Observable<Player>
+    fun getDisconnectedPlayers(): Observable<Player>
 }

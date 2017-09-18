@@ -7,7 +7,7 @@ import io.reactivex.disposables.CompositeDisposable
  * @author longv
  * Created on 03-Aug-17.
  */
-abstract class BaseViewModel : MVVMViewModel {
+abstract class AbstractViewModel : MVVMViewModel {
 
     protected val disposables: CompositeDisposable = CompositeDisposable()
 

@@ -16,10 +16,13 @@ import javax.inject.Inject
 /**
  * Created by longvu on 14/09/2017.
  */
-class BluetoothService @Inject constructor(bluetoothManager: BluetoothManager): NetworkService() {
+class BluetoothService @Inject constructor(bluetoothManager: BluetoothManager): NetworkService {
     companion object {
         val uuid = UUID.fromString("")!!
     }
+
+    override var isHosting: Boolean = false
+
 
     val bluetoothSupported: Boolean
         get() = btAdapter != null
@@ -30,23 +33,27 @@ class BluetoothService @Inject constructor(bluetoothManager: BluetoothManager): 
     private var btServerSocket: BluetoothServerSocket? = null
     private var btConnections: List<BluetoothConnection> = listOf()
 
-    override fun startHosting() {
+    override fun startHosting(): Boolean {
         // Open bluetooth server socket
-        try {
+        return try {
             btServerSocket = btAdapter?.listenUsingInsecureRfcommWithServiceRecord("", uuid)
             isHosting = true
+            true // Indicate start hosting successfully
         } catch (ioe: IOException) {
             Log.e(BluetoothService::class.qualifiedName, "Could not open bluetooth server socket", ioe)
+            false // Indicate fail to start hosting
         }
     }
 
-    override fun stopHosting() {
+    override fun stopHosting(): Boolean {
         // Close bluetooth server socket
-        try {
+        return try {
             btServerSocket?.close()
             isHosting = false
+            true // Indicate stop hosting successfully
         } catch (ioe: IOException) {
             Log.e(BluetoothService::class.qualifiedName, "Could not close bluetooth server socket", ioe)
+            false // Indicate fail to stop hosting
         }
     }
 
@@ -73,6 +80,23 @@ class BluetoothService @Inject constructor(bluetoothManager: BluetoothManager): 
             } catch (e: Exception) {
                 emitter.onError(e)
             }
+        }
+    }
+
+    override fun getConnection(): Connection? {
+        var socket: BluetoothSocket? = null
+        try {
+            socket = btServerSocket?.accept()
+        } catch (ioe: IOException) {
+            Log.e(BluetoothService::class.qualifiedName, "Failed to accept bluetooth socket", ioe)
+        }
+
+        return if (socket != null) {
+            val connection = BluetoothConnection(socket)
+            btConnections = btConnections.plus(connection)
+            connection
+        } else {
+            null
         }
     }
 

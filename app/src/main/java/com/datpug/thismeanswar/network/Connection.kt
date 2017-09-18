@@ -10,4 +10,6 @@ interface Connection {
     val connectionId: String
     val inputStream: InputStream
     val outputStream: OutputStream
+
+    fun disconnect()
 }

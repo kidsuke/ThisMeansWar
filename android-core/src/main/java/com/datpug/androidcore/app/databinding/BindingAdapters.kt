@@ -6,17 +6,16 @@ import android.databinding.adapters.ListenerUtil
 import android.databinding.ViewDataBinding
 import android.databinding.DataBindingUtil
 import android.view.LayoutInflater
-
+import android.os.Build
+import android.transition.TransitionManager
+import android.util.Log
 import android.view.ViewGroup
 import android.widget.EditText
 
 import com.datpug.androidcore.extension.hideKeyboard
 import com.datpug.androidcore.extension.showKeyboard
 import com.datpug.androidcore.R
-
-import android.os.Build
-import android.transition.TransitionManager
-import android.util.Log
+import com.datpug.androidcore.BR
 
 /**
  * Created by long.vu on 8/17/2017.
@@ -78,8 +77,8 @@ class BindingAdapters {
 
             val layoutInflater = LayoutInflater.from(parent.context)
             entries
-            .map { bindLayout(layoutInflater, parent, layoutId, it) }
-            .forEach { parent.addView(it.root) }
+                .map { bindLayout(layoutInflater, parent, layoutId, it) }
+                .forEach { parent.addView(it.root) }
         }
     }
 
@@ -118,9 +117,10 @@ class BindingAdapters {
             startTransition(viewGroup)
 
             val layoutInflater = LayoutInflater.from(viewGroup.context)
-            observableList.reversed()
-            .map { bindLayout(layoutInflater, viewGroup, layoutId, it) }
-            .forEach { viewGroup.addView(it.root, start) }
+            observableList
+                .reversed()
+                .map { bindLayout(layoutInflater, viewGroup, layoutId, it) }
+                .forEach { viewGroup.addView(it.root, start) }
         }
 
         override fun onItemRangeMoved(observableList: ObservableList<Any>, from: Int, to: Int, count: Int) {

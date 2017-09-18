@@ -14,7 +14,7 @@ import com.datpug.androidcore.extension.flattenChildViews
  * Created on 05-Aug-17.
  */
 
-abstract class BaseFragment<out A : BaseActivity> : Fragment() {
+abstract class AbstractFragment<out A : AbstractActivity> : Fragment() {
 
     @Suppress("UNCHECKED_CAST")
     val hostActivity by lazy {
