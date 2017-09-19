@@ -31,45 +31,31 @@ class HostGameViewModel @Inject constructor(private val multiplayerService: Mult
     private var waitingForPlayers: Boolean = true
 
     override fun onCreated() {
+        // Subscribe to connected players stream
+        multiplayerService.getPlayers()
+                .subscribeBy (
+                        onNext = {
+                            playerEntries.clear()
+                            playerEntries.addAll(it)
+                            setupView()
+                        },
+                        onComplete = {
+                            waitingForPlayers = false
+                            setupView()
+                        },
+                        onError = {}
+                )
+        .addTo(disposables)
         waitingForPlayers = multiplayerService.startHostingGame()
         setupView()
     }
 
     override fun onResume() {
-        // Subscribe to connected players stream
-        multiplayerService.getConnectedPlayer()
-        .subscribeBy (
-            onNext = {
-                playerEntries.add(it)
-                setupView()
-            },
-            onComplete = {
-                waitingForPlayers = false
-                setupView()
-            },
-            onError = {}
-        )
-        .addTo(disposables)
 
-        // Subscribe to disconnected players stream
-        multiplayerService.getDisconnectedPlayer()
-        .subscribeBy (
-            onNext = {
-                val player: Player? = playerEntries.find { _player -> _player.playerId == it.playerId }
-                if (player != null) playerEntries.remove(player)
-                setupView()
-            },
-            onComplete = {
-                waitingForPlayers = false
-                setupView()
-            },
-            onError = {}
-        )
-        .addTo(disposables)
     }
 
     override fun onPause() {
-        if (!disposables.isDisposed) disposables.clear()
+        //if (!disposables.isDisposed) disposables.clear()
     }
 
     override fun setupView() {
