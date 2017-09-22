@@ -23,7 +23,7 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        arAppSession = ARApplicationSession(this)
+        arAppSession = ARApplicationSession(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
         arAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
         vuforiaRenderer = VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false)
@@ -150,9 +150,10 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
 //
 //            // Sets the layout background to transparent
 //            mUILayout.setBackgroundColor(Color.TRANSPARENT)
+
+            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
             val config = AndroidApplicationConfiguration()
             initialize(ThisMeansWar(vuforiaRenderer), config)
-            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
 
 //            setSampleAppMenuAdditionalViews()
 //            mSampleAppMenu = SampleAppMenu(this, this,

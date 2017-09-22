@@ -114,7 +114,7 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
     }
 
     // Configures the video mode and sets offsets for the camera's image
-    fun configureVideoBackground(screenWidth: Int, screenHeight: Int, isPortrait: Boolean) {
+    private fun configureVideoBackground(screenWidth: Int, screenHeight: Int, isPortrait: Boolean) {
         val cameraDevice = CameraDevice.getInstance()
         val vm = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_DEFAULT)
 
@@ -156,7 +156,7 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         Renderer.getInstance().videoBackgroundConfig = config
     }
 
-    fun renderVideoBackground() {
+    private fun renderVideoBackground() {
         mRenderingPrimitives = Device.getInstance().renderingPrimitives
 
         if (currentView == VIEW.VIEW_POSTPROCESS)
@@ -214,7 +214,7 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
     val VIRTUAL_FOV_Y_DEGS = 85.0f
     val M_PI = 3.14159f
 
-    fun getSceneScaleFactor(): Double {
+    private fun getSceneScaleFactor(): Double {
         // Get the y-dimension of the physical camera field of view
         val fovVector = CameraDevice.getInstance().cameraCalibration.fieldOfViewRads
         val cameraFovYRads = fovVector.data[1]

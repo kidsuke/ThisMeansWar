@@ -10,21 +10,28 @@ import android.view.WindowManager
 import com.datpug.R
 import com.vuforia.*
 import com.vuforia.Vuforia
-
+import io.reactivex.Completable
 
 
 /**
  * Created by longvu on 20/09/2017.
  */
-class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.UpdateCallbackInterface {
+class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOrientation: Int):  Vuforia.UpdateCallbackInterface {
+    private val VUFORIA_KEY = "AQQRe6b/////AAAAGcmQz5avqE61gOA0Z/QZxrZWeh2KZN5w64g7UWeagaUwuYUVH863O90Q4QyYCZWC/OHJgA+aOmwZ6HEMktHer59DuPUUzFhipbLLneJf4kjGVssReqak5oN+muwzWRnq0w+uOXMDFEV+x3H4O84G4h6ptaFZ+l3QXsC1kB6RNdn8/dI+RoWqglK3hQgLfcSkT4lMDSpdIHoMnpED+xmn0uD13Yslt+/tWl4xD0YRVPlYxFMSsdok7ErCYg7/jkqpquxGpbK1jVgnXoBptDKF4zINEZmWzYFnoSh8LNMub0Gig9XobqgKeTtDGPCDQQeygJGMgwQaGiQBGUmP1qY6nk5b1ZLLrrtKoYipHFsAI2SJ"
+
+
     val LOGTAG: String = ""
 
     // Reference to current Activity
     private lateinit var activity: Activity
 
     //Flags
-    private var started = false
-    private var cameraRunning = false
+    var isStarted = false
+        private set
+    var isCameraRunning = false
+        private set
+
+
     // The async tasks to initialize the Vuforia SDK:
     private var initVuforiaTask: InitVuforiaTask? = null
     private var initTrackerTask: InitTrackerTask? = null
@@ -43,6 +50,107 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
 
     // Holds the camera configuration to use upon resuming
     private var cameraConfig = CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT
+
+    init {
+//        if (screenOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR && Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO) {
+//            screenOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+//        }
+//
+//        // Use an OrientationChangeListener here to capture all orientation changes.  Android
+//        // will not send an Activity.onConfigurationChanged() callback on a 180 degree rotation,
+//        // ie: Left Landscape to Right Landscape.  Vuforia needs to react to this change and the
+//        // ARApplicationSession needs to update the Projection Matrix.
+//        val orientationEventListener = object : OrientationEventListener(activity) {
+//            var lastRotation = -1
+//
+//            override fun onOrientationChanged(i: Int) {
+//                val activityRotation = activity.windowManager.defaultDisplay.rotation
+//                if (lastRotation != activityRotation) {
+//                    lastRotation = activityRotation
+//                }
+//            }
+//        }
+//
+//        if (orientationEventListener.canDetectOrientation()) {
+//            orientationEventListener.enable()
+//        }
+//
+//        // Apply screen orientation
+//        activity.requestedOrientation = screenOrientation
+//
+//        // As long as this window is visible to the user, keep the device's screen turned on and bright
+//        activity.window.setFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON, WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+//
+//        // Set vuforia flags
+//        vuforiaFlags = INIT_FLAGS.GL_20
+    }
+
+    fun initVuforia(): Completable {
+        return Completable.create { emitter ->
+            try {
+                Vuforia.setInitParameters(activity, vuforiaFlags, VUFORIA_KEY)
+                emitter.onComplete()
+            } catch (e: Exception) {
+                emitter.onError(e)
+            }
+        }
+    }
+
+    fun startVuforia(): Completable {
+        return Completable.create { emitter ->
+            try {
+                // Prevent the concurrent lifecycle operations:
+                synchronized(lifecycleLock) {
+                    startCameraAndTrackers(cameraConfig)
+                }
+                emitter.onComplete()
+            } catch (e: Exception) {
+                emitter.onError(e)
+            }
+        }
+    }
+
+    fun resumeVuforia(): Completable {
+        return Completable.create { emitter ->
+            try {
+                // Prevent the concurrent lifecycle operations:
+                synchronized(lifecycleLock) {
+                    Vuforia.onResume()
+                }
+                // We may start the camera only if the Vuforia SDK has already been initialized
+                if (isStarted && !isCameraRunning) {
+                    startAR(cameraConfig)
+                }
+                emitter.onComplete()
+            } catch (e: Exception) {
+                emitter.onError(e)
+            }
+        }
+    }
+
+    fun pauseVuforia(): Completable {
+        return Completable.create { emitter ->
+            try {
+                if (isStarted) {
+                    stopCamera()
+                }
+                Vuforia.onPause()
+                emitter.onComplete()
+            } catch (e: Exception) {
+                emitter.onError(e)
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
 
     fun initAR(activity: Activity, screenOrientation: Int) {
         var vuforiaException: ARApplicationException? = null
@@ -123,7 +231,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
     @Throws(ARApplicationException::class)
     private fun startCameraAndTrackers(camera: Int) {
         val error: String
-        if (cameraRunning) {
+        if (isCameraRunning) {
             error = "Camera already running, unable to open again"
             Log.e(LOGTAG, error)
             throw ARApplicationException(
@@ -152,7 +260,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
 
         arAppControl.doStartTrackers()
 
-        cameraRunning = true
+        isCameraRunning = true
     }
 
     fun startAR(camera: Int) {
@@ -194,7 +302,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
         initVuforiaTask = null
         loadTrackerTask = null
 
-        started = false
+        isStarted = false
 
         stopCamera()
 
@@ -248,7 +356,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
     // Pauses Vuforia and stops the camera
     @Throws(ARApplicationException::class)
     fun pauseAR() {
-        if (started) {
+        if (isStarted) {
             stopCamera()
         }
 
@@ -360,7 +468,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
             Log.d(LOGTAG, "ResumeVuforiaTask.onPostExecute")
 
             // We may start the camera only if the Vuforia SDK has already been initialized
-            if (started && !cameraRunning) {
+            if (isStarted && !isCameraRunning) {
                 startAR(cameraConfig)
                 arAppControl.onVuforiaResumed()
             }
@@ -432,7 +540,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
 
                 Vuforia.registerCallback(this@ARApplicationSession)
 
-                started = true
+                isStarted = true
             } else {
                 val logMessage = "Failed to load tracker data."
                 // Error loading dataset
@@ -492,9 +600,9 @@ class ARApplicationSession(val arAppControl: ARApplicationControl):  Vuforia.Upd
     }
 
     fun stopCamera() {
-        if (cameraRunning) {
+        if (isCameraRunning) {
             arAppControl.doStopTrackers()
-            cameraRunning = false
+            isCameraRunning = false
             CameraDevice.getInstance().stop()
             CameraDevice.getInstance().deinit()
         }
