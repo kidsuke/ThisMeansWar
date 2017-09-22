@@ -52,37 +52,37 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
     private var cameraConfig = CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT
 
     init {
-//        if (screenOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR && Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO) {
-//            screenOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-//        }
-//
-//        // Use an OrientationChangeListener here to capture all orientation changes.  Android
-//        // will not send an Activity.onConfigurationChanged() callback on a 180 degree rotation,
-//        // ie: Left Landscape to Right Landscape.  Vuforia needs to react to this change and the
-//        // ARApplicationSession needs to update the Projection Matrix.
-//        val orientationEventListener = object : OrientationEventListener(activity) {
-//            var lastRotation = -1
-//
-//            override fun onOrientationChanged(i: Int) {
-//                val activityRotation = activity.windowManager.defaultDisplay.rotation
-//                if (lastRotation != activityRotation) {
-//                    lastRotation = activityRotation
-//                }
-//            }
-//        }
-//
-//        if (orientationEventListener.canDetectOrientation()) {
-//            orientationEventListener.enable()
-//        }
-//
-//        // Apply screen orientation
-//        activity.requestedOrientation = screenOrientation
-//
-//        // As long as this window is visible to the user, keep the device's screen turned on and bright
-//        activity.window.setFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON, WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-//
-//        // Set vuforia flags
-//        vuforiaFlags = INIT_FLAGS.GL_20
+        if (screenOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR && Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO) {
+            screenOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        }
+
+        // Use an OrientationChangeListener here to capture all orientation changes.  Android
+        // will not send an Activity.onConfigurationChanged() callback on a 180 degree rotation,
+        // ie: Left Landscape to Right Landscape.  Vuforia needs to react to this change and the
+        // ARApplicationSession needs to update the Projection Matrix.
+        val orientationEventListener = object : OrientationEventListener(activity) {
+            var lastRotation = -1
+
+            override fun onOrientationChanged(i: Int) {
+                val activityRotation = activity.windowManager.defaultDisplay.rotation
+                if (lastRotation != activityRotation) {
+                    lastRotation = activityRotation
+                }
+            }
+        }
+
+        if (orientationEventListener.canDetectOrientation()) {
+            orientationEventListener.enable()
+        }
+
+        // Apply screen orientation
+        activity.requestedOrientation = screenOrientation
+
+        // As long as this window is visible to the user, keep the device's screen turned on and bright
+        activity.window.setFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON, WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+
+        // Set vuforia flags
+        vuforiaFlags = INIT_FLAGS.GL_20
     }
 
     fun initVuforia(): Completable {
@@ -96,7 +96,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
-    fun startVuforia(): Completable {
+    fun startVuforiaARCamera(): Completable {
         return Completable.create { emitter ->
             try {
                 // Prevent the concurrent lifecycle operations:

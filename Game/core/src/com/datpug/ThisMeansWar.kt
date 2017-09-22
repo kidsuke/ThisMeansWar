@@ -12,8 +12,17 @@ import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 
 
-class ThisMeansWar(val arRenderer: ARRenderer) : ApplicationAdapter() {
+class ThisMeansWar: ApplicationAdapter() {
 
+    var arRenderer: ARRenderer? = null
+        set(value) {
+            try {
+                value?.initRendering(Gdx.graphics.width, Gdx.graphics.height)
+            } catch (e: Exception) {
+                //Error when initialize rendering with ARRenderer
+            }
+
+        }
     private lateinit var img: Texture
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var environment: Environment
@@ -42,13 +51,13 @@ class ThisMeansWar(val arRenderer: ARRenderer) : ApplicationAdapter() {
         modelInstance = ModelInstance(model)
         spriteBatch = SpriteBatch()
         img = Texture("badlogic.jpg")
-
-        arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
     }
 
     override fun render() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
-        arRenderer.render()
+        arRenderer?.render()
+
+
 //        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 //        //Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
 //
@@ -63,7 +72,7 @@ class ThisMeansWar(val arRenderer: ARRenderer) : ApplicationAdapter() {
 
     override fun resize(width: Int, height: Int) {
         super.resize(width, height)
-        arRenderer.resize(width, height)
+        arRenderer?.resize(width, height)
     }
 
     override fun dispose() {
@@ -72,4 +81,5 @@ class ThisMeansWar(val arRenderer: ARRenderer) : ApplicationAdapter() {
         spriteBatch.dispose()
         img.dispose()
     }
+
 }

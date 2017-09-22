@@ -14,11 +14,20 @@ import com.datpug.ar.ARApplicationException
 import com.datpug.ar.ARApplicationSession
 import com.datpug.ar.VuforiaRenderer
 import com.vuforia.*
+import io.reactivex.Scheduler
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
+import io.reactivex.schedulers.Schedulers
 
 class AndroidLauncher : AndroidApplication(), ARApplicationControl {
     private var dataSetUserDef: DataSet? = null
     private lateinit var arAppSession: ARApplicationSession
     private lateinit var vuforiaRenderer: VuforiaRenderer
+    private lateinit var theGame: ThisMeansWar
+
+    private val disposables: CompositeDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,10 +35,91 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
         arAppSession = ARApplicationSession(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
         arAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
-        vuforiaRenderer = VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false)
+        // Initialize the our grand game \(^_^)/
         val config = AndroidApplicationConfiguration()
-        initialize(ThisMeansWar(vuforiaRenderer), config)
+        theGame = ThisMeansWar()
+        initialize(theGame, config)
+
+        // Initialize Vuforia AR
+        arAppSession.initVuforia()
+        // Need to be done in another thread since it's a blocking call
+        .subscribeOn(Schedulers.newThread())
+        // Observe the result in main thread
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribeBy(
+            onComplete = {
+                // Initialize Vuforia successfully, start the AR Camera
+                arAppSession.startVuforiaARCamera()
+                // Need to be done in another thread since it's a blocking call
+                .subscribeOn(Schedulers.newThread())
+                // Observe the result in main thread
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeBy(
+                    onComplete = {
+                        // Completes starting the AR camera, integrate the ARRenderer with the game
+                        theGame.arRenderer = VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false)
+                    },
+                    onError = {
+                        // An error has occurred
+                    }
+                ).addTo(disposables)
+            },
+            onError = {
+                // An error has occurred
+            }
+        ).addTo(disposables)
+
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume vuforia
+        arAppSession.resumeVuforia()
+        // Need to be done in another thread since it's a blocking call
+        .subscribeOn(Schedulers.newThread())
+        // Observe the result in main thread
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribeBy(
+            onComplete = {
+                // Resume completed
+            },
+            onError = {
+                // An error has happened
+            }
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause vuforia
+        arAppSession.pauseVuforia()
+        // Need to be done in another thread since it's a blocking call
+        .subscribeOn(Schedulers.newThread())
+        // Observe the result in main thread
+        .observeOn(AndroidSchedulers.mainThread())
+        // After pausing the vuforia completes, clear all the disposables
+        .doAfterTerminate { disposables.clear() }
+        .subscribeBy(
+            onComplete = {
+                // Pause completed
+            },
+            onError = {
+                // An error has happened
+            }
+        ).addTo(disposables)
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
     override fun doInitTrackers(): Boolean {
         // Initialize the image tracker
@@ -150,10 +240,10 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
 //
 //            // Sets the layout background to transparent
 //            mUILayout.setBackgroundColor(Color.TRANSPARENT)
-
-            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
-            val config = AndroidApplicationConfiguration()
-            initialize(ThisMeansWar(vuforiaRenderer), config)
+//
+//            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
+//            val config = AndroidApplicationConfiguration()
+//            initialize(ThisMeansWar(vuforiaRenderer), config)
 
 //            setSampleAppMenuAdditionalViews()
 //            mSampleAppMenu = SampleAppMenu(this, this,
