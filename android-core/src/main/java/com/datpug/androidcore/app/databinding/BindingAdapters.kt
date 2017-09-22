@@ -32,8 +32,8 @@ class BindingAdapters {
         @BindingAdapter("entries", "layout")
         @JvmStatic
         fun setEntries(viewGroup: ViewGroup,
-            oldEntries: ObservableList<Any>?, oldLayoutId: Int,
-            newEntries: ObservableList<Any>?, newLayoutId: Int) {
+            oldEntries: List<Any>?, oldLayoutId: Int,
+            newEntries: List<Any>?, newLayoutId: Int) {
             if (oldEntries == newEntries && oldLayoutId == newLayoutId) {
                 //No change occurs
                 return
@@ -41,7 +41,7 @@ class BindingAdapters {
 
             var listener: EntryChangeListener? = ListenerUtil.getListener(viewGroup, R.id.entryListener)
             if (oldEntries != newEntries && listener != null) {
-                oldEntries?.removeOnListChangedCallback(listener)
+                (oldEntries as ObservableList)?.removeOnListChangedCallback(listener)
             }
 
             if (newEntries == null) {
@@ -54,7 +54,7 @@ class BindingAdapters {
                     listener.layoutId = newLayoutId
                 }
                 if (newEntries !== oldEntries) {
-                    newEntries.addOnListChangedCallback(listener)
+                    (newEntries as ObservableList).addOnListChangedCallback(listener)
                 }
                 resetViews(viewGroup, newLayoutId, newEntries)
             }

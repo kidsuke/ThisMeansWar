@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import com.datpug.androidcore.app.mvvm.MVVMFragment
 import com.datpug.thismeanswar.databinding.FragmentHostGameBinding
+import com.datpug.thismeanswar.multiplayer.MultiplayerServiceImpl
+import com.datpug.thismeanswar.network.bluetooth.BluetoothService
 import com.datpug.thismeanswar.presentation.menu.MenuActivity
 import javax.inject.Inject
 
@@ -17,6 +19,7 @@ class HostGameFragment: MVVMFragment<MenuActivity, HostGameViewModel>() {
         @Inject set
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        viewModel = HostGameViewModel(MultiplayerServiceImpl(BluetoothService(context)))
         val binding: FragmentHostGameBinding = FragmentHostGameBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
         binding.viewModel.navigator = hostActivity

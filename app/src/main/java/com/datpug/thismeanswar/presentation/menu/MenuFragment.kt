@@ -17,12 +17,8 @@ class MenuFragment: MVVMFragment<MenuActivity, MenuViewModel>() {
     override lateinit var viewModel: MenuViewModel
         @Inject set
 
-    override fun onAttach(context: Context?) {
-        AndroidSupportInjection.inject(this)
-        super.onAttach(context)
-    }
-
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        viewModel = MenuViewModel()
         val binding: FragmentMenuBinding = FragmentMenuBinding.inflate(inflater, container, false)
         binding.viewModel = viewModel
         binding.viewModel.navigator = hostActivity

@@ -8,7 +8,7 @@ import io.reactivex.Observable
 interface NetworkService {
     var isHosting: Boolean
 
-    fun startHosting(): Boolean
+    fun startHosting(connectionEstablished: (Connection) -> Unit): Boolean
     fun stopHosting(): Boolean
     fun getConnections(condition: () -> Boolean): Observable<Connection>
     fun getConnection(): Connection?
