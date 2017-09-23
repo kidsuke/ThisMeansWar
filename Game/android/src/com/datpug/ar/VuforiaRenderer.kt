@@ -13,8 +13,8 @@ import com.vuforia.*
 /**
  * Created by longvu on 21/09/2017.
  */
-class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: Int, val stereo: Boolean): ARRenderer {
-    private var renderer: Renderer? = null
+class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: Int, val stereo: Boolean): ARRenderer() {
+    private lateinit var renderer: Renderer
 
     private var mRenderingPrimitives: RenderingPrimitives? = null
     private var currentView = VIEW.VIEW_SINGULAR
@@ -30,10 +30,30 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
     private var vbTexCoordHandle = 0
     private var vbProjectionMatrixHandle = 0
 
+    var screenWidth: Int? = null
+        private set
+    var screenHeight: Int? = null
+        private set
+    var isPortrait: Boolean? = true
+        private set
+
+    private var isActive = false
+
+    override fun setRendererActive(active: Boolean) {
+        isActive = active
+        if (isActive) configureVideoBackground()
+    }
+
     override fun initRendering(screenWidth: Int, screenHeight: Int) {
+        this.screenWidth = screenWidth
+        this.screenHeight = screenHeight
+        this.renderer = Renderer.getInstance()
+
+        Vuforia.onSurfaceCreated()
+
         if (deviceMode != Device.MODE.MODE_AR && deviceMode != Device.MODE.MODE_VR) {
             Log.e("", "Device mode should be Device.MODE.MODE_AR or Device.MODE.MODE_VR")
-            throw IllegalArgumentException()
+            //throw IllegalArgumentException()
         }
         Device.getInstance().apply {
             isViewerActive = stereo
@@ -41,28 +61,7 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         }
 
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, if (Vuforia.requiresAlpha()) 0.0f else 1.0f)
-
-        renderer = Renderer.getInstance()
-        onSurfaceCreated()
-        configureVideoBackground(screenWidth, screenHeight, true)
-    }
-
-    override fun resize(width: Int, height: Int) {
-        onSurfaceChanged(width, height)
-    }
-
-    // Called when the surface changed size.
-    fun onSurfaceChanged(width: Int, height: Int) {
-        // Call Vuforia function to handle render surface size changes:
-        arAppSession.onSurfaceChanged(width, height)
-    }
-
-    fun onSurfaceCreated() {
-        arAppSession.onSurfaceCreated()
-
-        vbShaderProgramID = SampleUtils.createProgramFromShaderSrc(VideoBackgroundShader.VB_VERTEX_SHADER,
-                VideoBackgroundShader.VB_FRAGMENT_SHADER)
-
+        vbShaderProgramID = SampleUtils.createProgramFromShaderSrc(VideoBackgroundShader.VB_VERTEX_SHADER, VideoBackgroundShader.VB_FRAGMENT_SHADER)
         // Rendering configuration for video background
         if (vbShaderProgramID > 0) {
             // Activate shader:
@@ -82,18 +81,21 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
             // Stop using the program
             GLES20.glUseProgram(0)
         }
-
         videoBackgroundTex = GLTextureUnit()
+    }
+
+    override fun resize(width: Int, height: Int) {
+        Vuforia.onSurfaceChanged(width, height)
     }
 
     // The render function.
     override fun render() {
-//        if (!mIsActive)
-//            return null
+        if (!isActive)
+            return
 
-        val state = renderer?.begin()
+        renderer.begin()
         renderVideoBackground()
-        renderer?.end()
+        renderer.end()
 
 
         // did we find any trackables this frame?
@@ -114,7 +116,11 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
     }
 
     // Configures the video mode and sets offsets for the camera's image
-    private fun configureVideoBackground(screenWidth: Int, screenHeight: Int, isPortrait: Boolean) {
+    private fun configureVideoBackground() {
+        if (screenWidth == null || screenHeight == null || isPortrait == null) {
+            throw RuntimeException("Renderer has not been initialized yet")
+        }
+
         val cameraDevice = CameraDevice.getInstance()
         val vm = cameraDevice.getVideoMode(CameraDevice.MODE.MODE_DEFAULT)
 
@@ -122,28 +128,28 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         config.enabled = true
         config.position = Vec2I(0, 0)
 
-        var xSize = 0
-        var ySize = 0
+        var xSize: Int
+        var ySize: Int
 
         // We keep the aspect ratio to keep the video correctly rendered. If it is portrait we
         // preserve the height and scale width and vice versa if it is landscape, we preserve
         // the width and we check if the selected values fill the screen, otherwise we invert
         // the selection
-        if (isPortrait) {
-            xSize = (vm.height * (screenHeight / vm.width.toFloat())).toInt()
-            ySize = screenHeight
+        if (isPortrait!!) {
+            xSize = (vm.height * (screenHeight!! / vm.width.toFloat())).toInt()
+            ySize = screenHeight!!
 
-            if (xSize < screenWidth) {
-                xSize = screenWidth
-                ySize = (screenWidth * (vm.width / vm.height.toFloat())).toInt()
+            if (xSize < screenWidth!!) {
+                xSize = screenWidth!!
+                ySize = (screenWidth!! * (vm.width / vm.height.toFloat())).toInt()
             }
         } else {
-            xSize = screenWidth
-            ySize = (vm.height * (screenWidth / vm.width.toFloat())).toInt()
+            xSize = screenWidth!!
+            ySize = (vm.height * (screenWidth!! / vm.width.toFloat())).toInt()
 
-            if (ySize < screenHeight) {
-                xSize = (screenHeight * (vm.width / vm.height.toFloat())).toInt()
-                ySize = screenHeight
+            if (ySize < screenHeight!!) {
+                xSize = (screenHeight!! * (vm.width / vm.height.toFloat())).toInt()
+                ySize = screenHeight!!
             }
         }
 
@@ -157,28 +163,27 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
     }
 
     private fun renderVideoBackground() {
-        mRenderingPrimitives = Device.getInstance().renderingPrimitives
-
         if (currentView == VIEW.VIEW_POSTPROCESS)
             return
 
+        mRenderingPrimitives = Device.getInstance().renderingPrimitives
+
         val vbVideoTextureUnit = 0
         // Bind the video bg texture and get the Texture ID from Vuforia
-        videoBackgroundTex!!.textureUnit = vbVideoTextureUnit
-        if (!renderer!!.updateVideoBackgroundTexture(videoBackgroundTex)) {
+        videoBackgroundTex?.textureUnit = vbVideoTextureUnit
+        if (!renderer.updateVideoBackgroundTexture(videoBackgroundTex)) {
             Log.e("", "Unable to update video background texture")
             return
         }
 
-        val vbProjectionMatrix = Tool.convert2GLMatrix(
-                mRenderingPrimitives!!.getVideoBackgroundProjectionMatrix(currentView, COORDINATE_SYSTEM_TYPE.COORDINATE_SYSTEM_CAMERA)).data
+        val vbProjectionMatrix: FloatArray = Tool.convert2GLMatrix(mRenderingPrimitives!!.getVideoBackgroundProjectionMatrix(currentView, COORDINATE_SYSTEM_TYPE.COORDINATE_SYSTEM_CAMERA)).data
 
         // Apply the scene scale on video see-through eyewear, to scale the video background and augmentation
         // so that the display lines up with the real world
         // This should not be applied on optical see-through devices, as there is no video background,
         // and the calibration ensures that the augmentation matches the real world
         if (Device.getInstance().isViewerActive) {
-            val sceneScaleFactor = getSceneScaleFactor().toFloat()
+            val sceneScaleFactor: Float = getSceneScaleFactor().toFloat()
             Matrix.scaleM(vbProjectionMatrix, 0, sceneScaleFactor, sceneScaleFactor, 1.0f)
         }
 
@@ -189,8 +194,8 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         val vbMesh = mRenderingPrimitives!!.getVideoBackgroundMesh(currentView)
         // Load the shader and upload the vertex/texcoord/index data
         GLES20.glUseProgram(vbShaderProgramID)
-        GLES20.glVertexAttribPointer(vbVertexHandle, 3, GLES20.GL_FLOAT, false, 0, vbMesh.positions.asFloatBuffer())
-        GLES20.glVertexAttribPointer(vbTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, vbMesh.uVs.asFloatBuffer())
+        GLES20.glVertexAttribPointer(vbVertexHandle, 3, GLES20.GL_FLOAT, false, 0, vbMesh.positions)
+        GLES20.glVertexAttribPointer(vbTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, vbMesh.uVs)
 
         GLES20.glUniform1i(vbTexSampler2DHandle, vbVideoTextureUnit)
 
@@ -203,24 +208,24 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         GLES20.glUniformMatrix4fv(vbProjectionMatrixHandle, 1, false, vbProjectionMatrix, 0)
 
         // Then, we issue the render call
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, vbMesh.numTriangles * 3, GLES20.GL_UNSIGNED_SHORT,
-                vbMesh.triangles.asShortBuffer())
+        GLES20.glDrawElements(GLES20.GL_TRIANGLES, vbMesh.numTriangles * 3, GLES20.GL_UNSIGNED_SHORT, vbMesh.triangles)
 
         // Finally, we disable the vertex arrays
         GLES20.glDisableVertexAttribArray(vbVertexHandle)
         GLES20.glDisableVertexAttribArray(vbTexCoordHandle)
     }
 
-    val VIRTUAL_FOV_Y_DEGS = 85.0f
-    val M_PI = 3.14159f
 
     private fun getSceneScaleFactor(): Double {
+        val virtualForYDegs = 85.0f
+        val pi = 3.14159f
+
         // Get the y-dimension of the physical camera field of view
         val fovVector = CameraDevice.getInstance().cameraCalibration.fieldOfViewRads
         val cameraFovYRads = fovVector.data[1]
 
         // Get the y-dimension of the virtual camera field of view
-        val virtualFovYRads = VIRTUAL_FOV_Y_DEGS * M_PI / 180
+        val virtualFovYRads = virtualForYDegs * pi / 180
 
         // The scene-scale factor represents the proportion of the viewport that is filled by
         // the video background when projected onto the same plane.

@@ -11,6 +11,7 @@ import com.datpug.R
 import com.vuforia.*
 import com.vuforia.Vuforia
 import io.reactivex.Completable
+import io.reactivex.Observable
 
 
 /**
@@ -23,7 +24,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
     val LOGTAG: String = ""
 
     // Reference to current Activity
-    private lateinit var activity: Activity
+    private var activity: Activity = arAppControl as Activity
 
     //Flags
     var isStarted = false
@@ -85,10 +86,25 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         vuforiaFlags = INIT_FLAGS.GL_20
     }
 
-    fun initVuforia(): Completable {
+    fun startVuforia(): Completable {
         return Completable.create { emitter ->
             try {
                 Vuforia.setInitParameters(activity, vuforiaFlags, VUFORIA_KEY)
+
+                var progressValue: Int
+                do {
+                    // Vuforia.init() blocks until an initialization step is
+                    // complete, then it proceeds to the next step and reports
+                    // progress in percents (0 ... 100%).
+                    // If Vuforia.init() returns -1, it indicates an error.
+                    // Initialization is done when progress has reached 100%.
+                    progressValue = Vuforia.init()
+                } while (!emitter.isDisposed && progressValue in 0..99)
+
+                startCameraAndTrackers(cameraConfig)
+
+                isStarted = true
+
                 emitter.onComplete()
             } catch (e: Exception) {
                 emitter.onError(e)
@@ -96,10 +112,9 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
-    fun startVuforiaARCamera(): Completable {
-        return Completable.create { emitter ->
+    fun startVuforiaARCamera(): Observable<Boolean> {
+        return Observable.create<Boolean> { emitter ->
             try {
-                // Prevent the concurrent lifecycle operations:
                 synchronized(lifecycleLock) {
                     startCameraAndTrackers(cameraConfig)
                 }
@@ -116,10 +131,10 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
                 // Prevent the concurrent lifecycle operations:
                 synchronized(lifecycleLock) {
                     Vuforia.onResume()
-                }
-                // We may start the camera only if the Vuforia SDK has already been initialized
-                if (isStarted && !isCameraRunning) {
-                    startAR(cameraConfig)
+                    // We may start the camera only if the Vuforia SDK has already been initialized
+                    if (isStarted && !isCameraRunning) {
+                        startCameraAndTrackers(cameraConfig)
+                    }
                 }
                 emitter.onComplete()
             } catch (e: Exception) {
@@ -215,7 +230,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         if (vuforiaException != null) {
             // Send Vuforia Exception to the application and call initDone
             // to stop initialization process
-            arAppControl.onInitARDone(vuforiaException)
+            //arAppControl.onInitARDone(vuforiaException)
         }
     }
 
@@ -234,8 +249,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         if (isCameraRunning) {
             error = "Camera already running, unable to open again"
             Log.e(LOGTAG, error)
-            throw ARApplicationException(
-                    ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
+            throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
         cameraConfig = camera
@@ -245,8 +259,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
-        if (!CameraDevice.getInstance().selectVideoMode(
-                CameraDevice.MODE.MODE_DEFAULT)) {
+        if (!CameraDevice.getInstance().selectVideoMode(CameraDevice.MODE.MODE_DEFAULT)) {
             error = "Unable to set video mode"
             Log.e(LOGTAG, error)
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
@@ -258,7 +271,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
-        arAppControl.doStartTrackers()
+//        arAppControl.doStartTrackers()
 
         isCameraRunning = true
     }

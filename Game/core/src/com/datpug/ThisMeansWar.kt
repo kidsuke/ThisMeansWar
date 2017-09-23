@@ -1,6 +1,7 @@
 package com.datpug
 
 import com.badlogic.gdx.ApplicationAdapter
+import com.badlogic.gdx.Game
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -12,17 +13,8 @@ import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 
 
-class ThisMeansWar: ApplicationAdapter() {
+class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
-    var arRenderer: ARRenderer? = null
-        set(value) {
-            try {
-                value?.initRendering(Gdx.graphics.width, Gdx.graphics.height)
-            } catch (e: Exception) {
-                //Error when initialize rendering with ARRenderer
-            }
-
-        }
     private lateinit var img: Texture
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var environment: Environment
@@ -32,6 +24,10 @@ class ThisMeansWar: ApplicationAdapter() {
     private lateinit var modelBatch: ModelBatch
 
     override fun create() {
+        arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
+
+
+
         perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
         perspectiveCamera.apply {
             position.set(10f, 10f, 10f)
@@ -51,28 +47,29 @@ class ThisMeansWar: ApplicationAdapter() {
         modelInstance = ModelInstance(model)
         spriteBatch = SpriteBatch()
         img = Texture("badlogic.jpg")
+
     }
 
     override fun render() {
-        Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
-        arRenderer?.render()
+        super.render()
+        arRenderer.render()
 
-
+        //Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
 //        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 //        //Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
 //
-//        modelBatch.begin(perspectiveCamera)
-//        modelBatch.render(modelInstance, environment)
-//        modelBatch.end()
+        modelBatch.begin(perspectiveCamera)
+        modelBatch.render(modelInstance, environment)
+        modelBatch.end()
 
-//        spriteBatch.begin()
-//        spriteBatch.draw(img, 0f, 0f)
-//        spriteBatch.end()
+        spriteBatch.begin()
+        spriteBatch.draw(img, 0f, 0f)
+        spriteBatch.end()
     }
 
     override fun resize(width: Int, height: Int) {
         super.resize(width, height)
-        arRenderer?.resize(width, height)
+        arRenderer.resize(width, height)
     }
 
     override fun dispose() {

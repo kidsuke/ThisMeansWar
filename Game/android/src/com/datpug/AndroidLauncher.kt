@@ -1,20 +1,16 @@
 package com.datpug
 
 import android.content.pm.ActivityInfo
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
-import android.view.ViewGroup
 
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
-import com.datpug.ThisMeansWar
 import com.datpug.ar.ARApplicationControl
 import com.datpug.ar.ARApplicationException
 import com.datpug.ar.ARApplicationSession
 import com.datpug.ar.VuforiaRenderer
 import com.vuforia.*
-import io.reactivex.Scheduler
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -24,50 +20,36 @@ import io.reactivex.schedulers.Schedulers
 class AndroidLauncher : AndroidApplication(), ARApplicationControl {
     private var dataSetUserDef: DataSet? = null
     private lateinit var arAppSession: ARApplicationSession
-    private lateinit var vuforiaRenderer: VuforiaRenderer
     private lateinit var theGame: ThisMeansWar
-
     private val disposables: CompositeDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         arAppSession = ARApplicationSession(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
-        arAppSession.initAR(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
 
         // Initialize the our grand game \(^_^)/
         val config = AndroidApplicationConfiguration()
-        theGame = ThisMeansWar()
+        theGame = ThisMeansWar(VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false))
         initialize(theGame, config)
 
         // Initialize Vuforia AR
-        arAppSession.initVuforia()
-        // Need to be done in another thread since it's a blocking call
-        .subscribeOn(Schedulers.newThread())
-        // Observe the result in main thread
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribeBy(
-            onComplete = {
-                // Initialize Vuforia successfully, start the AR Camera
-                arAppSession.startVuforiaARCamera()
-                // Need to be done in another thread since it's a blocking call
-                .subscribeOn(Schedulers.newThread())
-                // Observe the result in main thread
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeBy(
-                    onComplete = {
-                        // Completes starting the AR camera, integrate the ARRenderer with the game
-                        theGame.arRenderer = VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false)
-                    },
-                    onError = {
-                        // An error has occurred
-                    }
-                ).addTo(disposables)
-            },
-            onError = {
-                // An error has occurred
-            }
-        ).addTo(disposables)
+        arAppSession.startVuforia()
+            // Need to be done in another thread since it's a blocking call
+            .subscribeOn(Schedulers.newThread())
+            // Observe the result in main thread
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onComplete = {
+                    //After starting successfully, activate game AR renderer
+                    theGame.arRenderer.setRendererActive(true)
+                },
+                onError = {
+                    // An error has occurred
+
+                }
+            ).addTo(disposables)
+
 
     }
 
@@ -75,38 +57,38 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
         super.onResume()
         // Resume vuforia
         arAppSession.resumeVuforia()
-        // Need to be done in another thread since it's a blocking call
-        .subscribeOn(Schedulers.newThread())
-        // Observe the result in main thread
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribeBy(
-            onComplete = {
-                // Resume completed
-            },
-            onError = {
-                // An error has happened
-            }
-        )
+            // Need to be done in another thread since it's a blocking call
+            .subscribeOn(Schedulers.newThread())
+            // Observe the result in main thread
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy(
+                onComplete = {
+                    // Resume completed
+                },
+                onError = {
+                    // An error has occurred
+                }
+            ).addTo(disposables)
     }
 
     override fun onPause() {
         super.onPause()
         // Pause vuforia
         arAppSession.pauseVuforia()
-        // Need to be done in another thread since it's a blocking call
-        .subscribeOn(Schedulers.newThread())
-        // Observe the result in main thread
-        .observeOn(AndroidSchedulers.mainThread())
-        // After pausing the vuforia completes, clear all the disposables
-        .doAfterTerminate { disposables.clear() }
-        .subscribeBy(
-            onComplete = {
-                // Pause completed
-            },
-            onError = {
-                // An error has happened
-            }
-        ).addTo(disposables)
+            // Need to be done in another thread since it's a blocking call
+            .subscribeOn(Schedulers.newThread())
+            // Observe the result in main thread
+            .observeOn(AndroidSchedulers.mainThread())
+            // After pausing the vuforia completes, clear all the disposables
+            .doAfterTerminate { disposables.clear() }
+            .subscribeBy(
+                onComplete = {
+                    // Pause completed
+                },
+                onError = {
+                    // An error has occurred
+                }
+            ).addTo(disposables)
     }
 
 
@@ -241,9 +223,9 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
 //            // Sets the layout background to transparent
 //            mUILayout.setBackgroundColor(Color.TRANSPARENT)
 //
-//            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
-//            val config = AndroidApplicationConfiguration()
-//            initialize(ThisMeansWar(vuforiaRenderer), config)
+            arAppSession.startAR(CameraDevice.CAMERA_DIRECTION.CAMERA_DIRECTION_DEFAULT)
+            val config = AndroidApplicationConfiguration()
+            //initialize(ThisMeansWar(VuforiaRenderer(arAppSession, Device.MODE.MODE_AR, false)), config)
 
 //            setSampleAppMenuAdditionalViews()
 //            mSampleAppMenu = SampleAppMenu(this, this,
