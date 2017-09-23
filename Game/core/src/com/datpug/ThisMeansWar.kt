@@ -52,12 +52,12 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     override fun render() {
         super.render()
+
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
+        Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
+
         arRenderer.render()
 
-        //Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
-//        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
-//        //Gdx.gl.glClearColor(1f, 0f, 0f, 1f)
-//
         modelBatch.begin(perspectiveCamera)
         modelBatch.render(modelInstance, environment)
         modelBatch.end()
