@@ -11,7 +11,6 @@ import com.datpug.R
 import com.vuforia.*
 import com.vuforia.Vuforia
 import io.reactivex.Completable
-import io.reactivex.Observable
 
 
 /**
@@ -31,6 +30,8 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         private set
     var isCameraRunning = false
         private set
+
+    var dataSetUserDef: DataSet? = null
 
 
     // The async tasks to initialize the Vuforia SDK:
@@ -86,22 +87,22 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         vuforiaFlags = INIT_FLAGS.GL_20
     }
 
+    /**
+     * Start Vuforia, related to Android life cycle
+     */
     fun startVuforia(): Completable {
         return Completable.create { emitter ->
             try {
-                Vuforia.setInitParameters(activity, vuforiaFlags, VUFORIA_KEY)
-
-                var progressValue: Int
-                do {
-                    // Vuforia.init() blocks until an initialization step is
-                    // complete, then it proceeds to the next step and reports
-                    // progress in percents (0 ... 100%).
-                    // If Vuforia.init() returns -1, it indicates an error.
-                    // Initialization is done when progress has reached 100%.
-                    progressValue = Vuforia.init()
-                } while (!emitter.isDisposed && progressValue in 0..99)
-
-                startCameraAndTrackers(cameraConfig)
+                // Initialize Vuforia
+                initVuforia { !emitter.isDisposed }
+                // Initialize trackers. This must be done before starting camera
+                initTrackers()
+                // Start trackers
+                startTrackers()
+                // Load trackers data
+                loadTrackersData()
+                // Finally, start camera
+                startCamera(cameraConfig)
 
                 isStarted = true
 
@@ -112,30 +113,19 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
-    fun startVuforiaARCamera(): Observable<Boolean> {
-        return Observable.create<Boolean> { emitter ->
-            try {
-                synchronized(lifecycleLock) {
-                    startCameraAndTrackers(cameraConfig)
-                }
-                emitter.onComplete()
-            } catch (e: Exception) {
-                emitter.onError(e)
-            }
-        }
-    }
-
+    /**
+     * Resume Vuforia, related to Android life cycle
+     */
     fun resumeVuforia(): Completable {
         return Completable.create { emitter ->
             try {
-                // Prevent the concurrent lifecycle operations:
-                synchronized(lifecycleLock) {
-                    Vuforia.onResume()
-                    // We may start the camera only if the Vuforia SDK has already been initialized
-                    if (isStarted && !isCameraRunning) {
-                        startCameraAndTrackers(cameraConfig)
-                    }
+                Vuforia.onResume()
+                // We may start the camera only if the Vuforia SDK has already been initialized
+                if (isStarted && !isCameraRunning) {
+                    startTrackers()
+                    startCamera(cameraConfig)
                 }
+
                 emitter.onComplete()
             } catch (e: Exception) {
                 emitter.onError(e)
@@ -143,13 +133,18 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
+    /**
+     * Pause Vuforia, related to Android life cycle
+     */
     fun pauseVuforia(): Completable {
         return Completable.create { emitter ->
             try {
                 if (isStarted) {
+                    stopTrackers()
                     stopCamera()
                 }
                 Vuforia.onPause()
+
                 emitter.onComplete()
             } catch (e: Exception) {
                 emitter.onError(e)
@@ -157,124 +152,230 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-    fun initAR(activity: Activity, screenOrientation: Int) {
-        var vuforiaException: ARApplicationException? = null
-        this.activity = activity
-
-        var orientation = screenOrientation
-        if (screenOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR && Build.VERSION.SDK_INT > Build.VERSION_CODES.FROYO) {
-            orientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        }
-
-        // Use an OrientationChangeListener here to capture all orientation changes.  Android
-        // will not send an Activity.onConfigurationChanged() callback on a 180 degree rotation,
-        // ie: Left Landscape to Right Landscape.  Vuforia needs to react to this change and the
-        // ARApplicationSession needs to update the Projection Matrix.
-        val orientationEventListener = object : OrientationEventListener(activity) {
-            var lastRotation = -1
-
-            override fun onOrientationChanged(i: Int) {
-                val activityRotation = activity.windowManager.defaultDisplay.rotation
-                if (lastRotation != activityRotation) {
-                    lastRotation = activityRotation
-                }
-            }
-        }
-
-        if (orientationEventListener.canDetectOrientation()) {
-            orientationEventListener.enable()
-        }
-
-        // Apply screen orientation
-        activity.requestedOrientation = orientation
-
-        // As long as this window is visible to the user, keep the device's screen turned on and bright
-        activity.window.setFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON, WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
-
-        // Set vuforia flags
-        vuforiaFlags = INIT_FLAGS.GL_20
-
-        // Initialize Vuforia SDK asynchronously to avoid blocking the
-        // main (UI) thread.
-        //
-        // NOTE: This task instance must be created and invoked on the
-        // UI thread and it can be executed only once!
-        if (initVuforiaTask != null) {
-            val logMessage = "Cannot initialize SDK twice"
-            vuforiaException = ARApplicationException(ARApplicationException.VUFORIA_ALREADY_INITIALIZATED, logMessage)
-            Log.e(LOGTAG, logMessage)
-        }
-
-        if (vuforiaException == null) {
+    /**
+     * Stop Vuforia, related to Android life cycle
+     */
+    fun stopVuforia(): Completable {
+        return Completable.create { emitter ->
             try {
-                initVuforiaTask = InitVuforiaTask()
-                initVuforiaTask?.execute()
+                // Release resources
+                unloadTrackersData()
+                deinitTrackers()
+
+                emitter.onComplete()
             } catch (e: Exception) {
-                val logMessage = "Initializing Vuforia SDK failed"
-                vuforiaException = ARApplicationException(ARApplicationException.INITIALIZATION_FAILURE, logMessage)
-                Log.e(LOGTAG, logMessage)
+                emitter.onError(e)
+            }
+        }
+    }
+
+    /**
+     * Initialize Vuforia
+     * @param onProgress function to keep track of the initializing progress
+     */
+    private fun initVuforia(onProgress: (Int) -> Boolean) {
+        Vuforia.setInitParameters(activity, vuforiaFlags, VUFORIA_KEY)
+
+        var progressValue: Int
+        do {
+            // Vuforia.init() blocks until an initialization step is
+            // complete, then it proceeds to the next step and reports
+            // progress in percents (0 ... 100%).
+            // If Vuforia.init() returns -1, it indicates an error.
+            // Initialization is done when progress has reached 100%.
+            progressValue = Vuforia.init()
+        } while (!onProgress(progressValue) && progressValue in 0..99)
+    }
+
+    /**
+     * This function is used to initialize the all type of trackers for AR.
+     * It must be called after initialize Vuforia successfully with [initVuforia] and before starting the camera with [startCamera]
+     */
+    private fun initTrackers() {
+        val trackerManager = TrackerManager.getInstance()
+        val tracker: Tracker? = trackerManager.initTracker(ObjectTracker.getClassType())
+        if (tracker == null) {
+            Log.d(LOGTAG, "Failed to initialize ObjectTracker.")
+        } else {
+            Log.d(LOGTAG, "Successfully initialized ObjectTracker.")
+        }
+    }
+
+    /**
+     * This function is used to start trackers for AR
+     */
+    private fun startTrackers() {
+        val objectTracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType())
+        objectTracker?.start()
+    }
+
+    /**
+     * This function is used to stop trackers for AR
+     */
+    private fun stopTrackers() {
+        val objectTracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType())
+        objectTracker?.stop()
+    }
+
+    /**
+     * This function is used for releasing trackers' resources
+     */
+    private fun deinitTrackers() {
+        TrackerManager.getInstance().deinitTracker(ObjectTracker.getClassType())
+    }
+
+    /**
+     * This function is used for load trackers' data
+     */
+    private fun loadTrackersData() {
+        // Get the image tracker:
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
+        if (objectTracker == null) {
+            Log.d(LOGTAG, "Failed to load tracking data set because the ObjectTracker has not been initialized.")
+            return
+        }
+
+        // Create the data set:
+        dataSetUserDef = objectTracker.createDataSet()
+        if (dataSetUserDef == null) {
+            Log.d(LOGTAG, "Failed to create a new tracking data.")
+        }
+
+        if (!objectTracker.activateDataSet(dataSetUserDef)) {
+            Log.d(LOGTAG, "Failed to activate data set.")
+        }
+
+        Log.d(LOGTAG, "Successfully loaded and activated data set.")
+    }
+
+    /**
+     * This function is used for unload (or release) trackers' data
+     */
+    private fun unloadTrackersData() {
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
+        if (objectTracker == null) {
+            Log.d(LOGTAG, "Failed to destroy the tracking data set because the ObjectTracker has not been initialized.")
+            return
+        }
+
+        if (dataSetUserDef != null) {
+            if (objectTracker.getActiveDataSet(0) != null && !objectTracker.deactivateDataSet(dataSetUserDef)) {
+                Log.d(LOGTAG, "Failed to destroy the tracking data set because the data set could not be deactivated.")
             }
 
+            if (!objectTracker.destroyDataSet(dataSetUserDef)) {
+                Log.d(LOGTAG, "Failed to destroy the tracking data set.")
+            }
+
+            Log.d(LOGTAG, "Successfully destroyed the data set.")
+            dataSetUserDef = null
         }
-
-        if (vuforiaException != null) {
-            // Send Vuforia Exception to the application and call initDone
-            // to stop initialization process
-            //arAppControl.onInitARDone(vuforiaException)
-        }
     }
 
-    fun onSurfaceCreated() {
-        Vuforia.onSurfaceCreated()
-    }
-
-    fun onSurfaceChanged(width: Int, height: Int) {
-        Vuforia.onSurfaceChanged(width, height)
-    }
-
-    // Starts Vuforia, initialize and starts the camera and start the trackers
-    @Throws(ARApplicationException::class)
-    private fun startCameraAndTrackers(camera: Int) {
+    /**
+     * Initialize and start the camera
+     * @param camera camera config
+     */
+    private fun startCamera(camera: Int) {
         val error: String
+
+        // Check whether camera has been already running
         if (isCameraRunning) {
             error = "Camera already running, unable to open again"
             Log.e(LOGTAG, error)
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
-        cameraConfig = camera
+        // Init camera
         if (!CameraDevice.getInstance().init(camera)) {
             error = "Unable to open camera device: " + camera
             Log.e(LOGTAG, error)
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
+        // Set camera video mode
         if (!CameraDevice.getInstance().selectVideoMode(CameraDevice.MODE.MODE_DEFAULT)) {
             error = "Unable to set video mode"
             Log.e(LOGTAG, error)
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
+        // Set camera focus mode
+        if (!CameraDevice.getInstance().setFocusMode(CameraDevice.FOCUS_MODE.FOCUS_MODE_CONTINUOUSAUTO)) {
+            // If continuous autofocus mode fails, attempt to set to a different mode
+            if (!CameraDevice.getInstance().setFocusMode(CameraDevice.FOCUS_MODE.FOCUS_MODE_TRIGGERAUTO)) {
+                CameraDevice.getInstance().setFocusMode(CameraDevice.FOCUS_MODE.FOCUS_MODE_NORMAL)
+            }
+        }
+
+        // Start camera
         if (!CameraDevice.getInstance().start()) {
             error = "Unable to start camera device: " + camera
             Log.e(LOGTAG, error)
             throw ARApplicationException(ARApplicationException.CAMERA_INITIALIZATION_FAILURE, error)
         }
 
-//        arAppControl.doStartTrackers()
-
         isCameraRunning = true
     }
+
+    /**
+     * This function is used to stop the camera
+     */
+    private fun stopCamera() {
+        if (isCameraRunning) {
+            isCameraRunning = false
+            CameraDevice.getInstance().stop()
+            CameraDevice.getInstance().deinit()
+        }
+    }
+
+    fun startUserDefinedTargets(): Boolean {
+        Log.d(LOGTAG, "startUserDefinedTargets")
+
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
+        if (objectTracker != null) {
+            val targetBuilder = objectTracker.imageTargetBuilder
+            if (targetBuilder != null) {
+                // if needed, stop the target builder
+                if (targetBuilder.frameQuality != ImageTargetBuilder.FRAME_QUALITY.FRAME_QUALITY_NONE) targetBuilder.stopScan()
+                objectTracker.stop()
+                targetBuilder.startScan()
+            }
+        } else {
+            return false
+        }
+
+        return true
+    }
+
+    fun isUserDefinedTargetsRunning(): Boolean {
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
+
+        if (objectTracker != null) {
+            val targetBuilder = objectTracker.imageTargetBuilder
+            if (targetBuilder != null) {
+                Log.e(LOGTAG, "Quality> " + targetBuilder.frameQuality)
+                return targetBuilder.frameQuality != ImageTargetBuilder.FRAME_QUALITY.FRAME_QUALITY_NONE
+            }
+        }
+        return false
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
     fun startAR(camera: Int) {
 
@@ -364,7 +465,6 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             arAppControl.onInitARDone(vuforiaException)
         }
     }
-
 
     // Pauses Vuforia and stops the camera
     @Throws(ARApplicationException::class)
@@ -575,7 +675,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             // Prevent the concurrent lifecycle operations:
             synchronized(lifecycleLock) {
                 try {
-                    startCameraAndTrackers(cameraConfig)
+                    startCamera(cameraConfig)
                 } catch (e: ARApplicationException) {
                     Log.e(LOGTAG, "StartVuforiaTask.doInBackground: Could not start AR with exception: " + e)
                     vuforiaException = e
@@ -612,13 +712,6 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         else -> activity.getString(R.string.INIT_LICENSE_ERROR_UNKNOWN_ERROR)
     }
 
-    fun stopCamera() {
-        if (isCameraRunning) {
-            arAppControl.doStopTrackers()
-            isCameraRunning = false
-            CameraDevice.getInstance().stop()
-            CameraDevice.getInstance().deinit()
-        }
-    }
+
 
 }

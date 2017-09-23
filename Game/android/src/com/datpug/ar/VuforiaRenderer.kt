@@ -88,31 +88,31 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         Vuforia.onSurfaceChanged(width, height)
     }
 
+    private var lastTrackableName: String? = null
+
+    private var fieldOfViewRadians: Float? = null
+
     // The render function.
-    override fun render() {
+    override fun processFrame(): Array<FloatArray> {
         if (!isActive)
-            return
+            return arrayOf()
 
-        renderer.begin()
+        val state: State = renderer.begin()
         renderVideoBackground()
-        renderer.end()
-
 
         // did we find any trackables this frame?
-//        val results = arrayOfNulls<TrackableResult>(state.getNumTrackableResults())
-//        for (tIdx in 0..state.getNumTrackableResults() - 1) {
-//            //remember trackable
-//            val result = state.getTrackableResult(tIdx)
-//            lastTrackableName = result.getTrackable().getName()
-//            results[tIdx] = result
-//
-//            //calculate filed of view
-//            val calibration = CameraDevice.getInstance().getCameraCalibration()
-//            val size = calibration.getSize()
-//            val focalLength = calibration.getFocalLength()
-//            fieldOfViewRadians = (2 * Math.atan((0.5f * size.getData()[0] / focalLength.getData()[0]).toDouble())).toFloat()
-//        }
+        var results: Array<FloatArray> = arrayOf()
+        for (tIdx in 0 until state.numTrackableResults) {
+            //remember trackable
+            val trackableResult: TrackableResult = state.getTrackableResult(tIdx)
+            val modelViewMatrix_Vuforia = Tool.convertPose2GLMatrix(trackableResult.pose)
+            val modelViewMatrix = modelViewMatrix_Vuforia.data
+            results = results.plus(modelViewMatrix_Vuforia.data)
+        }
 
+        renderer.end()
+
+        return results
     }
 
     // Configures the video mode and sets offsets for the camera's image

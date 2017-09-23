@@ -7,5 +7,5 @@ abstract class ARRenderer {
     abstract fun initRendering(screenWidth: Int, screenHeight: Int)
     abstract fun setRendererActive(active: Boolean)
     abstract fun resize(width: Int, height: Int)
-    abstract fun render()
+    abstract fun processFrame(): Array<FloatArray>
 }
