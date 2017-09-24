@@ -101,6 +101,8 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
                 startTrackers()
                 // Load trackers data
                 loadTrackersData()
+                // Register for Vuforia callbacks
+                Vuforia.registerCallback(this@ARApplicationSession)
                 // Finally, start camera
                 startCamera(cameraConfig)
 
@@ -204,7 +206,7 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
     /**
      * This function is used to start trackers for AR
      */
-    private fun startTrackers() {
+    fun startTrackers() {
         val objectTracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType())
         objectTracker?.start()
     }
@@ -228,7 +230,6 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
      * This function is used for load trackers' data
      */
     private fun loadTrackersData() {
-        // Get the image tracker:
         val trackerManager = TrackerManager.getInstance()
         val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
         if (objectTracker == null) {
@@ -331,6 +332,10 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
     }
 
+    /**
+     * If everything related to UserDefinedTargets feature has been setup, use this function to begin
+     * @return a Boolean indicates whether the UserDefinedTargets feature has started successfully
+     */
     fun startUserDefinedTargets(): Boolean {
         Log.d(LOGTAG, "startUserDefinedTargets")
 
@@ -340,8 +345,10 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             val targetBuilder = objectTracker.imageTargetBuilder
             if (targetBuilder != null) {
                 // if needed, stop the target builder
-                if (targetBuilder.frameQuality != ImageTargetBuilder.FRAME_QUALITY.FRAME_QUALITY_NONE) targetBuilder.stopScan()
-                objectTracker.stop()
+                if (targetBuilder.frameQuality != ImageTargetBuilder.FRAME_QUALITY.FRAME_QUALITY_NONE) {
+                    targetBuilder.stopScan()
+                }
+                //objectTracker.stop()
                 targetBuilder.startScan()
             }
         } else {
@@ -351,6 +358,10 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         return true
     }
 
+    /**
+     * Check whether UserDefinedTarget is running
+     * @return a Boolean indicates UserDefinedTargets feature is running
+     */
     fun isUserDefinedTargetsRunning(): Boolean {
         val trackerManager = TrackerManager.getInstance()
         val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
@@ -364,6 +375,49 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
         return false
     }
+
+    /**
+     * A callback listens for Vuforia update event
+     * This is where trackables are registered to be tracked
+     * @param state Current state of Vuforia
+     */
+    override fun Vuforia_onUpdate(state: State?) {
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker
+
+
+            Log.d(LOGTAG, "Attempting to transfer the trackable source to the dataset")
+
+            // Deactivate current dataset
+            objectTracker.deactivateDataSet(objectTracker.getActiveDataSet(0))
+
+            // Clear the oldest target if the dataset is full or the dataset
+            // already contains five user-defined targets.
+            if (dataSetUserDef!!.hasReachedTrackableLimit() || dataSetUserDef!!.numTrackables >= 5)
+                dataSetUserDef!!.destroy(dataSetUserDef!!.getTrackable(0))
+
+            if (dataSetUserDef!!.numTrackables > 0) {
+                // We need to stop the extended tracking for the previous target
+                // so we can enable it for the new one
+                val previousCreatedTrackableIndex = dataSetUserDef!!.numTrackables - 1
+
+                objectTracker.resetExtendedTracking()
+                dataSetUserDef!!.getTrackable(previousCreatedTrackableIndex).stopExtendedTracking()
+            }
+
+            // Add new trackable source
+            val trackable = dataSetUserDef!!.createTrackable(objectTracker.imageTargetBuilder.trackableSource)
+
+            // Reactivate current dataset
+            objectTracker.activateDataSet(dataSetUserDef)
+
+//            if (mExtendedTracking) {
+//                trackable.startExtendedTracking()
+//            }
+
+
+    }
+
 
 
 
@@ -397,7 +451,6 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
             arAppControl.onInitARDone(vuforiaException)
         }
     }
-
 
     // Stops any ongoing initialization, stops Vuforia
     @Throws(ARApplicationException::class)
@@ -474,9 +527,6 @@ class ARApplicationSession(val arAppControl: ARApplicationControl, var screenOri
         }
 
         Vuforia.onPause()
-    }
-
-    override fun Vuforia_onUpdate(p0: State?) {
     }
 
     // Manages the configuration changes

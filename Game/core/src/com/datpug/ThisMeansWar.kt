@@ -22,8 +22,21 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var modelInstance: ModelInstance
     private lateinit var modelBatch: ModelBatch
 
+    private var arRenderListener: ARRenderer.OnARRenderListener = object : ARRenderer.OnARRenderListener {
+        override fun onRender(data: Array<FloatArray>) {
+            if (data.isNotEmpty()) {
+                modelBatch.begin(perspectiveCamera)
+                model = ModelBuilder().createBox(data[0][12], data[0][13], data[0][14], Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
+                modelInstance = ModelInstance(model)
+                modelBatch.render(modelInstance, environment)
+                modelBatch.end()
+            }
+        }
+    }
+
     override fun create() {
         arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
+        arRenderer.addOnARRenderListener(arRenderListener)
 
         perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
         perspectiveCamera.apply {
@@ -53,15 +66,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
 
-        val test: Array<FloatArray> = arRenderer.processFrame()
-
-        if (test.isNotEmpty()) {
-            modelBatch.begin(perspectiveCamera)
-            model = ModelBuilder().createBox(test[0][12], test[0][13], test[0][14], Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
-            modelInstance = ModelInstance(model)
-            modelBatch.render(modelInstance, environment)
-            modelBatch.end()
-        }
+        arRenderer.render()
 
         spriteBatch.begin()
         spriteBatch.draw(img, 0f, 0f)
@@ -125,6 +130,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         model.dispose()
         spriteBatch.dispose()
         img.dispose()
+        arRenderer.removeOnARRenderListener(arRenderListener)
     }
 
 }

@@ -39,11 +39,11 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
 
     private var isActive = false
 
-    override fun setRendererActive(active: Boolean) {
-        isActive = active
-        if (isActive) configureVideoBackground()
-    }
-
+    /**
+     * This function is used to initialize elements needed for rendering
+     * @param screenWidth
+     * @param screenHeight
+     */
     override fun initRendering(screenWidth: Int, screenHeight: Int) {
         this.screenWidth = screenWidth
         this.screenHeight = screenHeight
@@ -84,20 +84,32 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         videoBackgroundTex = GLTextureUnit()
     }
 
+    /**
+     * This function is used to decide whether the renderer should be active to render stuff. Otherwise, nothing will be rendered
+     * @param active
+     */
+    override fun setRendererActive(active: Boolean) {
+        isActive = active
+        // If renderer is activated, configure video background for the camera
+        if (isActive) configureVideoBackground()
+    }
+
+    /**
+     * This function is used when the screen is resize for some reasons
+     * @param width
+     * @param height
+     */
     override fun resize(width: Int, height: Int) {
         Vuforia.onSurfaceChanged(width, height)
     }
 
-    private var lastTrackableName: String? = null
-
-    private var fieldOfViewRadians: Float? = null
-
     // The render function.
-    override fun processFrame(): Array<FloatArray> {
-        if (!isActive)
-            return arrayOf()
+    override fun render() {
+        if (!isActive) return
 
-        val state: State = renderer.begin()
+        // Get our current state
+        val state: State = TrackerManager.getInstance().stateUpdater.updateState()
+        renderer.begin(state)
         renderVideoBackground()
 
         // did we find any trackables this frame?
@@ -106,16 +118,17 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
             //remember trackable
             val trackableResult: TrackableResult = state.getTrackableResult(tIdx)
             val modelViewMatrix_Vuforia = Tool.convertPose2GLMatrix(trackableResult.pose)
-            val modelViewMatrix = modelViewMatrix_Vuforia.data
             results = results.plus(modelViewMatrix_Vuforia.data)
         }
 
-        renderer.end()
+        renderListeners.forEach { it.onRender(results) }
 
-        return results
+        renderer.end()
     }
 
-    // Configures the video mode and sets offsets for the camera's image
+    /**
+     * Configures the video mode and sets offsets for the camera's image
+     */
     private fun configureVideoBackground() {
         if (screenWidth == null || screenHeight == null || isPortrait == null) {
             throw RuntimeException("Renderer has not been initialized yet")
@@ -162,6 +175,9 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         Renderer.getInstance().videoBackgroundConfig = config
     }
 
+    /**
+     * Render the video background, which is the camera
+     */
     private fun renderVideoBackground() {
         if (currentView == VIEW.VIEW_POSTPROCESS)
             return
@@ -214,7 +230,6 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         GLES20.glDisableVertexAttribArray(vbVertexHandle)
         GLES20.glDisableVertexAttribArray(vbTexCoordHandle)
     }
-
 
     private fun getSceneScaleFactor(): Double {
         val virtualForYDegs = 85.0f

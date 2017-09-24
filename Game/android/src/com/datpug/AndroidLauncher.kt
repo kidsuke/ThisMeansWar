@@ -122,11 +122,9 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
         }
     }
 
-
     fun startBuild() {
         val trackerManager = TrackerManager.getInstance()
-        val objectTracker: ObjectTracker? = trackerManager
-                .getTracker(ObjectTracker.getClassType()) as ObjectTracker?
+        val objectTracker: ObjectTracker? = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker?
 
         if (objectTracker != null) {
             val targetBuilder = objectTracker.imageTargetBuilder
@@ -136,7 +134,6 @@ class AndroidLauncher : AndroidApplication(), ARApplicationControl {
                     name = "UserTarget-" + targetBuilderCounter
                     targetBuilderCounter++
                 } while (!targetBuilder.build(name, 320.0f))
-
             }
         }
     }
