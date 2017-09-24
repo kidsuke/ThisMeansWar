@@ -20,6 +20,6 @@ abstract class ARRenderer {
     }
 
     interface OnARRenderListener {
-        fun onRender(data: Array<FloatArray>)
+        fun onRender(data: FloatArray, fieldOfView: Float)
     }
 }

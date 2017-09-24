@@ -23,10 +23,16 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var modelBatch: ModelBatch
 
     private var arRenderListener: ARRenderer.OnARRenderListener = object : ARRenderer.OnARRenderListener {
-        override fun onRender(data: Array<FloatArray>) {
+        override fun onRender(data: FloatArray, fieldOfView: Float) {
             if (data.isNotEmpty()) {
+//                perspectiveCamera.position.set(data[12], data[13], data[14])
+//                perspectiveCamera.up.set(data[4], data[5], data[6])
+//                perspectiveCamera.direction.set(data[8], data[9], data[10])
+//                perspectiveCamera.fieldOfView = 0.8f
+//                perspectiveCamera.update()
+
                 modelBatch.begin(perspectiveCamera)
-                model = ModelBuilder().createBox(data[0][12], data[0][13], data[0][14], Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
+                model = ModelBuilder().createBox(5f, 5f, 5f, Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
                 modelInstance = ModelInstance(model)
                 modelBatch.render(modelInstance, environment)
                 modelBatch.end()
@@ -67,6 +73,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
 
         arRenderer.render()
+
 
         spriteBatch.begin()
         spriteBatch.draw(img, 0f, 0f)
