@@ -11,7 +11,7 @@ import com.vuforia.Matrix44F
 /**
  * Created by longvu on 21/09/2017.
  */
-class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: Int, val stereo: Boolean): ARRenderer() {
+class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val stereo: Boolean): ARRenderer() {
     private lateinit var renderer: Renderer
 
     private var mRenderingPrimitives: RenderingPrimitives? = null

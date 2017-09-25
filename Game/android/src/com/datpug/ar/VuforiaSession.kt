@@ -14,7 +14,7 @@ import io.reactivex.Completable
 /**
  * Created by longvu on 20/09/2017.
  */
-class ARApplicationSession(private val activity: Activity, private var screenOrientation: Int):  Vuforia.UpdateCallbackInterface {
+class VuforiaSession(private val activity: Activity, private var screenOrientation: Int):  Vuforia.UpdateCallbackInterface {
     companion object {
         // This key must be provided in order to use Vuforia
         val VUFORIA_KEY = "AQQRe6b/////AAAAGcmQz5avqE61gOA0Z/QZxrZWeh2KZN5w64g7UWeagaUwuYUVH863O90Q4QyYCZWC/OHJgA+aOmwZ6HEMktHer59DuPUUzFhipbLLneJf4kjGVssReqak5oN+muwzWRnq0w+uOXMDFEV+x3H4O84G4h6ptaFZ+l3QXsC1kB6RNdn8/dI+RoWqglK3hQgLfcSkT4lMDSpdIHoMnpED+xmn0uD13Yslt+/tWl4xD0YRVPlYxFMSsdok7ErCYg7/jkqpquxGpbK1jVgnXoBptDKF4zINEZmWzYFnoSh8LNMub0Gig9XobqgKeTtDGPCDQQeygJGMgwQaGiQBGUmP1qY6nk5b1ZLLrrtKoYipHFsAI2SJ"
