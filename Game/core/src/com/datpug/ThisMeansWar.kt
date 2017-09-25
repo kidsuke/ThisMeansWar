@@ -22,27 +22,33 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var modelInstance: ModelInstance
     private lateinit var modelBatch: ModelBatch
 
-    private var arRenderListener: ARRenderer.OnARRenderListener = object : ARRenderer.OnARRenderListener {
-        override fun onRender(data: FloatArray, fieldOfView: Float) {
-            if (data.isNotEmpty()) {
-//                perspectiveCamera.position.set(data[12], data[13], data[14])
-//                perspectiveCamera.up.set(data[4], data[5], data[6])
-//                perspectiveCamera.direction.set(data[8], data[9], data[10])
-//                perspectiveCamera.fieldOfView = 0.8f
-//                perspectiveCamera.update()
+    private var shouldAppear = false
+    private var id = 0
 
-                modelBatch.begin(perspectiveCamera)
-                model = ModelBuilder().createBox(5f, 5f, 5f, Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
-                modelInstance = ModelInstance(model)
-                modelBatch.render(modelInstance, environment)
-                modelBatch.end()
-            }
+    private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
+        override fun onARDetected(id: Int) {
+            shouldAppear = true
+            modelBatch.begin(perspectiveCamera)
+            modelBatch.render(modelInstance, environment)
+            modelBatch.end()
+//            if (data.isNotEmpty()) {
+////                perspectiveCamera.position.set(data[12], data[13], data[14])
+////                perspectiveCamera.up.set(data[4], data[5], data[6])
+////                perspectiveCamera.direction.set(data[8], data[9], data[10])
+////                perspectiveCamera.fieldOfView = 0.8f
+////                perspectiveCamera.update()
+//
+//            }
+        }
+
+        override fun onARUnDetected(id: Int) {
+            shouldAppear = false
         }
     }
 
     override fun create() {
         arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
-        arRenderer.addOnARRenderListener(arRenderListener)
+        arRenderer.addOnARRenderListener(arDetectListener)
 
         perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
         perspectiveCamera.apply {
@@ -73,6 +79,10 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
 
         arRenderer.render()
+
+        if (shouldAppear) {
+
+        }
 
 
         spriteBatch.begin()
@@ -137,7 +147,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         model.dispose()
         spriteBatch.dispose()
         img.dispose()
-        arRenderer.removeOnARRenderListener(arRenderListener)
+        arRenderer.removeOnARRenderListener(arDetectListener)
     }
 
 }

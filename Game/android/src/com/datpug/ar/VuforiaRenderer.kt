@@ -1,20 +1,11 @@
 package com.datpug.ar
 
-import android.app.Activity
 import android.util.Log
 import android.opengl.GLES20
 import android.opengl.Matrix
 import com.datpug.ARRenderer
-import com.vuforia.Vuforia.onSurfaceChanged
-import com.vuforia.RendererHelper.drawVideoBackground
 import com.vuforia.*
 import com.vuforia.Matrix44F
-import com.vuforia.Vec2F
-import com.vuforia.CameraCalibration
-
-
-
-
 
 
 /**
@@ -120,47 +111,50 @@ class VuforiaRenderer(val arAppSession: ARApplicationSession, val deviceMode: In
         val state: State = TrackerManager.getInstance().stateUpdater.updateState()
         renderer.begin(state)
         renderVideoBackground()
-
+        Log.e("wtfffff", "check: " + state.numTrackableResults.toString())
         // did we find any trackables this frame?
-        var results: Array<FloatArray> = arrayOf()
-        for (index in 0 until state.numTrackableResults) {
-            //remember trackable
-            val trackableResult: TrackableResult = state.getTrackableResult(index)
-            val modelViewMatrix_Vuforia: Matrix44F = Tool.convertPose2GLMatrix(trackableResult.pose)
-            val rawData: FloatArray = modelViewMatrix_Vuforia.data
+//        if (state.numTrackableResults > 0) {
+            for (index in 0 until state.numTrackableResults) {
+                //remember trackable
+                val trackableResult: TrackableResult = state.getTrackableResult(index)
+                val modelViewMatrix_Vuforia: Matrix44F = Tool.convertPose2GLMatrix(trackableResult.pose)
+                val rawData: FloatArray = modelViewMatrix_Vuforia.data
 
-            val rotated: FloatArray
-            if (renderer.videoBackgroundConfig.reflection == VIDEO_BACKGROUND_REFLECTION.VIDEO_BACKGROUND_REFLECTION_ON) {
-                // Front camera
-                rotated = floatArrayOf(
-                    rawData[1], rawData[0], rawData[2], rawData[3],
-                    rawData[5], rawData[4], rawData[6], rawData[7],
-                    rawData[9], rawData[8], rawData[10], rawData[11],
-                    rawData[13], rawData[12], rawData[14], rawData[15]
-                )
-            } else {
-                // Back camera
-                rotated = floatArrayOf(
-                    rawData[1], -rawData[0], rawData[2], rawData[3],
-                    rawData[5], -rawData[4], rawData[6], rawData[7],
-                    rawData[9], -rawData[8], rawData[10], rawData[11],
-                    rawData[13], -rawData[12], rawData[14], rawData[15]
-                )
+                val rotated: FloatArray
+                if (renderer.videoBackgroundConfig.reflection == VIDEO_BACKGROUND_REFLECTION.VIDEO_BACKGROUND_REFLECTION_ON) {
+                    // Front camera
+                    rotated = floatArrayOf(
+                            rawData[1], rawData[0], rawData[2], rawData[3],
+                            rawData[5], rawData[4], rawData[6], rawData[7],
+                            rawData[9], rawData[8], rawData[10], rawData[11],
+                            rawData[13], rawData[12], rawData[14], rawData[15]
+                    )
+                } else {
+                    // Back camera
+                    rotated = floatArrayOf(
+                            rawData[1], -rawData[0], rawData[2], rawData[3],
+                            rawData[5], -rawData[4], rawData[6], rawData[7],
+                            rawData[9], -rawData[8], rawData[10], rawData[11],
+                            rawData[13], -rawData[12], rawData[14], rawData[15]
+                    )
+                }
+                val rot = Matrix44F()
+                rot.data = rotated
+                val inverse = SampleMath.Matrix44FInverse(rot)
+                val transp = SampleMath.Matrix44FTranspose(inverse)
+
+                //calculate filed of view
+                val calibration = CameraDevice.getInstance().cameraCalibration
+                val size = calibration.size
+                val focalLength = calibration.focalLength
+                fieldOfViewRadians = (2 * Math.atan((0.5f * size.data[0] / focalLength.data[0]).toDouble())).toFloat()
+
+                val data = transp.data
+                arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id) }
             }
-            val rot = Matrix44F()
-            rot.data = rotated
-            val inverse = SampleMath.Matrix44FInverse(rot)
-            val transp = SampleMath.Matrix44FTranspose(inverse)
-
-            //calculate filed of view
-            val calibration = CameraDevice.getInstance().cameraCalibration
-            val size = calibration.size
-            val focalLength = calibration.focalLength
-            fieldOfViewRadians = (2 * Math.atan((0.5f * size.data[0] / focalLength.data[0]).toDouble())).toFloat()
-
-            val data = transp.data
-            renderListeners.forEach { it.onRender(data, fieldOfViewRadians!!) }
-        }
+//        } else {
+//            arDetectListeners.forEach { it.onARUnDetected(1) }
+//        }
 
         renderer.end()
     }
