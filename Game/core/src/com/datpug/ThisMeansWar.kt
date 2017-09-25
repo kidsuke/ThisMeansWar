@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.ModelInstance
+import com.badlogic.gdx.math.Matrix4
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
@@ -26,8 +27,18 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private var id = 0
 
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
-        override fun onARDetected(id: Int) {
+        override fun onARDetected(id: Int, data: FloatArray, fieldOfView: Float) {
             shouldAppear = true
+
+                            perspectiveCamera.position.set(data[12], data[13], data[14])
+                perspectiveCamera.up.set(data[4], data[5], data[6])
+                perspectiveCamera.direction.set(data[8], data[9], data[10])
+                perspectiveCamera.fieldOfView = fieldOfView
+                perspectiveCamera.update()
+
+            modelInstance.transform.set(Matrix4())
+            modelInstance.transform.scale(0.2f, 0.2f, 0.2f)
+
             modelBatch.begin(perspectiveCamera)
             modelBatch.render(modelInstance, environment)
             modelBatch.end()
@@ -54,8 +65,8 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         perspectiveCamera.apply {
             position.set(10f, 10f, 10f)
             lookAt(0f, 0f, 0f)
-            near = 1f
-            far = 300f
+            near = 10f
+            far = 5000f
             update()
         }
 

@@ -117,6 +117,7 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
             for (index in 0 until state.numTrackableResults) {
                 //remember trackable
                 val trackableResult: TrackableResult = state.getTrackableResult(index)
+
                 val modelViewMatrix_Vuforia: Matrix44F = Tool.convertPose2GLMatrix(trackableResult.pose)
                 val rawData: FloatArray = modelViewMatrix_Vuforia.data
 
@@ -150,7 +151,7 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
                 fieldOfViewRadians = (2 * Math.atan((0.5f * size.data[0] / focalLength.data[0]).toDouble())).toFloat()
 
                 val data = transp.data
-                arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id) }
+                arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id, transp.data, fieldOfViewRadians!!) }
             }
 //        } else {
 //            arDetectListeners.forEach { it.onARUnDetected(1) }
