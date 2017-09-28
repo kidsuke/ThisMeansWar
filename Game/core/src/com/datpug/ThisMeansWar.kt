@@ -8,52 +8,59 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.graphics.VertexAttributes.Usage
 import com.badlogic.gdx.graphics.GL20
+import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.graphics.g3d.ModelInstance
-import com.badlogic.gdx.math.Matrix4
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
+import com.badlogic.gdx.math.Intersector
+import com.badlogic.gdx.math.Vector3
+import com.badlogic.gdx.math.collision.BoundingBox
+import com.badlogic.gdx.math.collision.Ray
+import com.badlogic.gdx.physics.box2d.CircleShape
+import com.badlogic.gdx.physics.bullet.Bullet
+import com.badlogic.gdx.utils.Logger
+import com.datpug.entity.Monster
+import com.datpug.entity.Puppy
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
+    private var score: Int = 0
 
-    private lateinit var img: Texture
+
+    private val logger = Logger("TESTING")
+
     private lateinit var spriteBatch: SpriteBatch
+    private lateinit var scoreText: BitmapFont
+
     private lateinit var environment: Environment
     private lateinit var perspectiveCamera: PerspectiveCamera
     private lateinit var model: Model
-    private lateinit var modelInstance: ModelInstance
+    private lateinit var monster: Monster
     private lateinit var modelBatch: ModelBatch
 
-    private var shouldAppear = false
-    private var id = 0
+    private lateinit var puppyController: PuppyController
+    private var monsters: Map<Int, Monster> = mapOf()
 
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
         override fun onARDetected(id: Int, data: FloatArray, fieldOfView: Float) {
-            shouldAppear = true
+            // Update camera so that it syncs with the AR camera
+            perspectiveCamera.position.set(data[12], data[13], data[14])
+            perspectiveCamera.up.set(data[4], data[5], data[6])
+            perspectiveCamera.direction.set(data[8], data[9], data[10])
+            perspectiveCamera.fieldOfView = fieldOfView
+            perspectiveCamera.update()
 
-                            perspectiveCamera.position.set(data[12], data[13], data[14])
-                perspectiveCamera.up.set(data[4], data[5], data[6])
-                perspectiveCamera.direction.set(data[8], data[9], data[10])
-                perspectiveCamera.fieldOfView = fieldOfView
-                perspectiveCamera.update()
-
-            modelInstance.transform.set(Matrix4())
-            modelInstance.transform.scale(0.2f, 0.2f, 0.2f)
-
-            modelBatch.begin(perspectiveCamera)
-            modelBatch.render(modelInstance, environment)
-            modelBatch.end()
-//            if (data.isNotEmpty()) {
-////                perspectiveCamera.position.set(data[12], data[13], data[14])
-////                perspectiveCamera.up.set(data[4], data[5], data[6])
-////                perspectiveCamera.direction.set(data[8], data[9], data[10])
-////                perspectiveCamera.fieldOfView = 0.8f
-////                perspectiveCamera.update()
-//
-//            }
-        }
-
-        override fun onARUnDetected(id: Int) {
-            shouldAppear = false
+            // Add new monster if there isn't any for the id
+            if (!monsters.keys.contains(id)) {
+                monsters = monsters.plus(Pair(id, Monster(model)))
+            }
+            // Find monster with current id and render it
+            val monster: Monster? = monsters[id]
+            if (monster != null) {
+                monster.isVisible = true
+                modelBatch.begin(perspectiveCamera)
+                modelBatch.render(monster, environment)
+                modelBatch.end()
+            }
         }
     }
 
@@ -75,12 +82,19 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
             set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
+
+        puppyController = PuppyController(perspectiveCamera)
+        puppyController.create()
+
+        spriteBatch = SpriteBatch()
+        scoreText = BitmapFont()
+        scoreText.color = Color.CORAL
+        scoreText.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
+        scoreText.data.scale(6f)
+
         modelBatch = ModelBatch()
         model = ModelBuilder().createBox(5f, 5f, 5f, Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
-        modelInstance = ModelInstance(model)
-        spriteBatch = SpriteBatch()
-        img = Texture("badlogic.jpg")
-
+        monster = Monster(model)
     }
 
     override fun render() {
@@ -90,15 +104,14 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
 
         arRenderer.render()
-
-        if (shouldAppear) {
-
-        }
-
+        puppyController.render()
 
         spriteBatch.begin()
-        spriteBatch.draw(img, 0f, 0f)
+        scoreText.draw(spriteBatch, "Score: $score", Gdx.graphics.width.toFloat(), Gdx.graphics.width.toFloat())
         spriteBatch.end()
+
+        fireIfDetectsMonster()
+        removeDeadMonster()
     }
 
     override fun resize(width: Int, height: Int) {
@@ -106,58 +119,30 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         arRenderer.resize(width, height)
     }
 
-//    private fun setProjectionAndCamera(test: Array<FloatArray>) {
-//        for (tIdx in 0 until test.size) {
-//            perspectiveCamera.position.set(data[12], data[13], data[14])
-//            perspectiveCamera.up.set(data[4], data[5], data[6])
-//            perspectiveCamera.direction.set(data[8], data[9], data[10])
-//        }
-//
-//        if (trackables != null && trackables.isNotEmpty()) {
-//            //transform all content
-//            val trackable = trackables[0]
-//
-//            val modelViewMatrix = Tool.convertPose2GLMatrix(trackable.getPose())
-//            val raw = modelViewMatrix.getData()
-//
-//            val rotated: FloatArray
-//            //switch axis and rotate to compensate coordinates change
-//            if (com.vuforia.Renderer.getInstance().getVideoBackgroundConfig().getReflection() == VIDEO_BACKGROUND_REFLECTION.VIDEO_BACKGROUND_REFLECTION_ON) {
-//                // Front camera
-//                rotated = floatArrayOf(raw[1], raw[0], raw[2], raw[3], raw[5], raw[4], raw[6], raw[7], raw[9], raw[8], raw[10], raw[11], raw[13], raw[12], raw[14], raw[15])
-//            } else {
-//                // Back camera
-//                rotated = floatArrayOf(raw[1], -raw[0], raw[2], raw[3], raw[5], -raw[4], raw[6], raw[7], raw[9], -raw[8], raw[10], raw[11], raw[13], -raw[12], raw[14], raw[15])
-//            }
-//            val rot = Matrix44F()
-//            rot.setData(rotated)
-//            val inverse = SampleMath.Matrix44FInverse(rot)
-//            val transp = SampleMath.Matrix44FTranspose(inverse)
-//
-//            val data = transp.getData()
-//            perspectiveCamera.position.set(data[12], data[13], data[14])
-//            perspectiveCamera.up.set(data[4], data[5], data[6])
-//            perspectiveCamera.direction.set(data[8], data[9], data[10])
-//
-//        } else {
-//            perspectiveCamera.position.set(100f, 100f, 100f)
-//            perspectiveCamera.lookAt(1000f, 1000f, 1000f)
-//        }
-////
-////        model.transform.set(Matrix4())
-////        //the model is rotated
-////        model.transform.rotate(1.0f, 0.0f, 0.0f, 90.0f)
-////        model.transform.rotate(0.0f, 1.0f, 0.0f, 90.0f)
-////        model.transform.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE)
-//
-//        perspectiveCamera.update()
-//    }
+    private fun fireIfDetectsMonster() {
+        val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
+        val monster: Monster? = monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && it.isVisible }
+
+        if (monster != null) {
+            if (!puppyController.isFiring) puppyController.startFire(monster)
+        } else {
+            if (puppyController.isFiring) puppyController.stopFire()
+        }
+    }
+
+    private fun removeDeadMonster() {
+        monsters = monsters.onEach { if (it.value.isDead) score += it.value.score }.filterNot { it.value.isDead }
+    }
+
+    private fun collide(): Boolean {
+        val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
+        return Intersector.intersectRayBoundsFast(ray, monster.boundingBox) && monster.isVisible
+    }
 
     override fun dispose() {
         modelBatch.dispose()
         model.dispose()
         spriteBatch.dispose()
-        img.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
     }
 

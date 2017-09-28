@@ -21,6 +21,5 @@ abstract class ARRenderer {
 
     interface OnARDetectListener {
         fun onARDetected(id: Int, data: FloatArray, fieldOfView: Float)
-        fun onARUnDetected(id: Int)
     }
 }
