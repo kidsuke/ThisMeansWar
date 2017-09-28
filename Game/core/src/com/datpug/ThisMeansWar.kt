@@ -56,7 +56,6 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
             // Find monster with current id and render it
             val monster: Monster? = monsters[id]
             if (monster != null) {
-                monster.isVisible = true
                 modelBatch.begin(perspectiveCamera)
                 modelBatch.render(monster, environment)
                 modelBatch.end()
@@ -102,16 +101,16 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
-
         arRenderer.render()
+
+        fireIfDetectsMonster()
+        removeDeadMonster()
         puppyController.render()
 
         spriteBatch.begin()
         scoreText.draw(spriteBatch, "Score: $score", Gdx.graphics.width.toFloat(), Gdx.graphics.width.toFloat())
         spriteBatch.end()
 
-        fireIfDetectsMonster()
-        removeDeadMonster()
     }
 
     override fun resize(width: Int, height: Int) {
@@ -121,8 +120,8 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private fun fireIfDetectsMonster() {
         val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
-        val monster: Monster? = monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && it.isVisible }
-
+        val monster: Monster? = monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
+        logger.error("test: " + (monster != null))
         if (monster != null) {
             if (!puppyController.isFiring) puppyController.startFire(monster)
         } else {
@@ -131,12 +130,13 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     }
 
     private fun removeDeadMonster() {
-        monsters = monsters.onEach { if (it.value.isDead) score += it.value.score }.filterNot { it.value.isDead }
-    }
-
-    private fun collide(): Boolean {
-        val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
-        return Intersector.intersectRayBoundsFast(ray, monster.boundingBox) && monster.isVisible
+        monsters =
+            monsters.onEach {
+                if (it.value.isDead) {
+                    score += it.value.score
+                    arRenderer.removeAR(it.key)
+                }
+            }.filterNot { it.value.isDead }
     }
 
     override fun dispose() {

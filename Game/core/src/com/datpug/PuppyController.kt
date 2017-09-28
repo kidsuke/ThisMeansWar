@@ -155,6 +155,8 @@ class PuppyController(val camera: Camera) : ApplicationListener {
 
     fun stopFire() {
         isFiring = false
-        this.target = null
+        target = null
+        leftProjectiles = listOf()
+        rightProjectiles = listOf()
     }
 }

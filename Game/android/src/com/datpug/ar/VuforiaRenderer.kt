@@ -286,4 +286,12 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
         // ... which is the scene-scale factor
         return Math.tan((cameraFovYRads / 2).toDouble()) / Math.tan((virtualFovYRads / 2).toDouble())
     }
+
+    /**
+     * Remove AR with specified id
+     * @param id of AR point
+     */
+    override fun removeAR(id: Int) {
+        arAppSession.destroyTrackableSource(id)
+    }
 }

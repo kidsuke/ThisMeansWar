@@ -10,6 +10,7 @@ abstract class ARRenderer {
     abstract fun setRendererActive(active: Boolean)
     abstract fun resize(width: Int, height: Int)
     abstract fun render()
+    abstract fun removeAR(id: Int)
 
     fun addOnARRenderListener(listener: OnARDetectListener) {
         arDetectListeners = arDetectListeners.plus(listener)

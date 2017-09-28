@@ -422,6 +422,25 @@ class VuforiaSession(private val activity: Activity, private var screenOrientati
         }
     }
 
+    fun destroyTrackableSource(id: Int) {
+        val trackerManager = TrackerManager.getInstance()
+        val objectTracker = trackerManager.getTracker(ObjectTracker.getClassType()) as ObjectTracker
+
+        // Deactivate current dataset
+        objectTracker.deactivateDataSet(objectTracker.getActiveDataSet(0))
+        // Clear the oldest target if the dataset is full or the dataset
+        // already contains five user-defined targets.
+        for (index in 0 until dataSetUserDef!!.numTrackables) {
+            if (dataSetUserDef!!.getTrackable(index).id == id) {
+                dataSetUserDef!!.destroy(dataSetUserDef!!.getTrackable(0))
+                break
+            }
+        }
+
+        // Reactivate current dataset
+        objectTracker.activateDataSet(dataSetUserDef)
+    }
+
     /**
      * This function is used to create user defined targets
      */
