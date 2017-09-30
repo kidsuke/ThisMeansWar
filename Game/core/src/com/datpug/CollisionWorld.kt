@@ -6,8 +6,8 @@ import com.badlogic.gdx.physics.bullet.collision.*
  * Created by longv on 29-Sep-17.
  */
 object CollisionWorld {
-    val MONSTER_FLAG = (1 shl 8).toShort()
-    val BULLET_FLAG = (1 shl 9).toShort()
+    val MONSTER_FLAG = 100//(1 shl 8).toShort()
+    val BULLET_FLAG = 200//(1 shl 9).toShort()
 
     val instance: btCollisionWorld
         get() {

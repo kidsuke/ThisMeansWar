@@ -11,40 +11,16 @@ import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.Intersector
-import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.math.collision.BoundingBox
 import com.badlogic.gdx.math.collision.Ray
-import com.badlogic.gdx.physics.box2d.CircleShape
 import com.badlogic.gdx.physics.bullet.Bullet
 import com.badlogic.gdx.physics.bullet.collision.*
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
-import com.datpug.entity.Puppy
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObject.instances
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
-import java.nio.file.Files.size
-import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.physics.bullet.collision.btCollisionWorld
-import com.badlogic.gdx.physics.bullet.collision.btDbvtBroadphase
-import com.badlogic.gdx.physics.bullet.collision.btCollisionDispatcher
-import com.badlogic.gdx.physics.bullet.collision.btDefaultCollisionConfiguration
-import com.badlogic.gdx.physics.bullet.collision.btCylinderShape
-import com.badlogic.gdx.physics.bullet.collision.btCapsuleShape
-import com.badlogic.gdx.physics.bullet.collision.btConeShape
-import com.badlogic.gdx.physics.bullet.collision.btBoxShape
-import com.badlogic.gdx.physics.bullet.collision.btSphereShape
-import com.badlogic.gdx.graphics.g3d.utils.CameraInputController
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.ModelBatch
-import com.badlogic.gdx.physics.bullet.collision.btBroadphaseInterface
-import com.badlogic.gdx.physics.bullet.collision.btDispatcher
-import com.badlogic.gdx.physics.bullet.collision.btCollisionConfiguration
-import com.badlogic.gdx.physics.bullet.collision.btCollisionShape
-import com.badlogic.gdx.graphics.g3d.ModelInstance
-import com.badlogic.gdx.utils.ArrayMap
-import com.badlogic.gdx.utils.Disposable
+import com.datpug.entity.GameObject
 
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
@@ -60,18 +36,26 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var environment: Environment
     private lateinit var perspectiveCamera: PerspectiveCamera
     private lateinit var model: Model
-    private lateinit var monster: Monster
     private lateinit var modelBatch: ModelBatch
 
     private lateinit var puppyController: PuppyController
     private lateinit var monsterController: MonsterController
-    private var monsters: Map<Int, Monster> = mapOf()
 
     inner class MyContactListener : ContactListener() {
-        override fun onContactAdded(colObj0: btCollisionObject?, partId0: Int, index0: Int, colObj1: btCollisionObject?, partId1: Int, index1: Int): Boolean {
-            logger.error("COLLIDEEEEEEEEEEEEEEEEEE")
+        override fun onContactAdded(colObj0: btCollisionObject, partId0: Int, index0: Int, colObj1: btCollisionObject, partId1: Int, index1: Int): Boolean {
+            print("yaya")
+            logger.error("COLLIDEEEEEEEEEEEEEEEEEEEEEEE")
+//            if (colObj0.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
+//                puppyController.collidedProjectile(colObj0.userData as GameObject)
+//            }
+//            if (colObj1.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
+//                puppyController.collidedProjectile(colObj1.userData as GameObject)
+//            }
+            puppyController.collidedProjectile()
             return true
         }
+
+
     }
 
     private lateinit var listener: MyContactListener
@@ -86,7 +70,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 //            perspectiveCamera.update()
             //monsterController.generateMonster()
             // Add new monster if there isn't any for the id
-            monsterController.generateMonster()
+            monsterController.generateMonster(id)
 //            if (!monsters.keys.contains(id)) {
 //                val newMonster = Monster(model)
 //                //newMonster.transform.scale(0.01f, 0.01f, 0.01f)
@@ -136,16 +120,18 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         monsterController = MonsterController()
         monsterController.create()
+        monsterController.monsterDeadListener = object : MonsterController.OnMonsterDeadListener {
+            override fun onMonsterDead(monster: Pair<Int, Monster>) {
+                score += monster.second.score
+                arRenderer.removeAR(monster.first)
+            }
+        }
 
         spriteBatch = SpriteBatch()
         scoreText = BitmapFont()
         scoreText.color = Color.CORAL
         scoreText.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
         scoreText.data.scale(6f)
-
-        modelBatch = ModelBatch()
-        model = ModelBuilder().createBox(5f, 5f, 5f, Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
-        monster = Monster(model)
 
         // Load assets
         GameAssets.loadAssets()
@@ -159,8 +145,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
         arRenderer.render()
 
-        fireIfDetectsMonster()
-        removeDeadMonster()
+        //fireIfDetectsMonster()
 
         puppyController.render()
         monsterController.render()
@@ -177,7 +162,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private fun fireIfDetectsMonster() {
         val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
-        val monster: Monster? = monsterController.monsters.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
+        val monster: Monster? = monsterController.monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
 
         if (monster != null) {
             if (!puppyController.isFiring) puppyController.startFire(monster)
@@ -186,23 +171,13 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         }
     }
 
-    private fun removeDeadMonster() {
-        monsters =
-            monsters.onEach {
-                if (it.value.isDead) {
-                    score += it.value.score
-                    arRenderer.removeAR(it.key)
-                }
-            }.filterNot { it.value.isDead }
-    }
-
     override fun dispose() {
         modelBatch.dispose()
         model.dispose()
         spriteBatch.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
         CollisionWorld.dispose()
-        //listener.dispose()
+        listener.dispose()
     }
 
 }

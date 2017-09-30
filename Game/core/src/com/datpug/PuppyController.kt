@@ -67,6 +67,7 @@ class PuppyController: ApplicationListener {
         if (isFiring) {
             fire()
         }
+        removeUnusedProjectiles()
     }
 
     override fun pause() {}
@@ -83,9 +84,11 @@ class PuppyController: ApplicationListener {
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(1f, 1f, -1f), 90f)
         projectile.body.worldTransform = projectile.transform
-        //projectile.body.userValue = leftProjectiles.size
+        projectile.body.userData = projectile
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
-        CollisionWorld.instance.addCollisionObject(projectile.body, CollisionWorld.BULLET_FLAG, CollisionWorld.MONSTER_FLAG)
+        projectile.body.contactCallbackFlag = CollisionWorld.BULLET_FLAG
+        projectile.body.contactCallbackFilter = CollisionWorld.MONSTER_FLAG
+        CollisionWorld.instance.addCollisionObject(projectile.body)
         return projectile
     }
 
@@ -94,9 +97,11 @@ class PuppyController: ApplicationListener {
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(-1f, 1f, -1f), -90f)
         projectile.body.worldTransform = projectile.transform
-        //projectile.body.userValue = rightProjectiles.size
+        projectile.body.userData = projectile
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
-        CollisionWorld.instance.addCollisionObject(projectile.body, CollisionWorld.BULLET_FLAG, CollisionWorld.MONSTER_FLAG)
+        projectile.body.contactCallbackFlag = CollisionWorld.BULLET_FLAG
+        projectile.body.contactCallbackFilter = CollisionWorld.MONSTER_FLAG
+        CollisionWorld.instance.addCollisionObject(projectile.body)
         return projectile
     }
 
@@ -122,24 +127,6 @@ class PuppyController: ApplicationListener {
             it.body.worldTransform = it.transform
         }
 
-        // Check if target gets hit and remove projectile
-        leftProjectiles.forEach {
-            if (targetGetsHit(it)) {
-                target!!.takeDamage(projectileDamage)
-                CollisionWorld.instance.removeCollisionObject(it.body)
-                it.dispose()
-            }
-        }
-        rightProjectiles.forEach {
-            if (targetGetsHit(it)) {
-                target!!.takeDamage(projectileDamage)
-                CollisionWorld.instance.removeCollisionObject(it.body)
-                it.dispose()
-            }
-        }
-        leftProjectiles = leftProjectiles.filterNot { it.isDisposed }
-        rightProjectiles = rightProjectiles.filterNot { it.isDisposed }
-
         // Render the projectiles
         modelBatch.begin(perspectiveCamera)
         leftProjectiles.plus(rightProjectiles).forEach {
@@ -161,4 +148,18 @@ class PuppyController: ApplicationListener {
         leftProjectiles = listOf()
         rightProjectiles = listOf()
     }
+
+    fun removeUnusedProjectiles() {
+//        leftProjectiles.forEach { if (it.isDisposed) CollisionWorld.instance.removeCollisionObject(it.body) }
+//        rightProjectiles.forEach { if (it.isDisposed) CollisionWorld.instance.removeCollisionObject(it.body) }
+//        leftProjectiles = leftProjectiles.filterNot { it.isDisposed }
+//        rightProjectiles = rightProjectiles.filterNot { it.isDisposed }
+    }
+
+    fun collidedProjectile() {
+        target?.takeDamage(projectileDamage)
+        //CollisionWorld.instance.removeCollisionObject(projectile.body)
+        //projectile.dispose()
+    }
+
 }

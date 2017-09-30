@@ -8,7 +8,9 @@ import com.badlogic.gdx.graphics.g3d.Model
  */
 object GameAssets {
 
-    val archerModel: Model by lazy { getModel("mesh/archer.g3db") }
+    val cerberusModel: Model by lazy { getModel(fileName = "mesh/cerberus.g3db") }
+    val diabloModel: Model by lazy { getModel(fileName = "mesh/diablous.g3db") }
+    val archerModel: Model by lazy { getModel(fileName = "mesh/archer.g3db") }
     val lionModel: Model by lazy { getModel(fileName = "mesh/lion.g3db") }
     val dinosaurModel: Model by lazy { getModel(fileName = "mesh/dinosaur.g3db") }
     val batModel: Model by lazy { getModel(fileName = "mesh/bat.g3db") }
@@ -22,6 +24,8 @@ object GameAssets {
         assetManager.load("mesh/dinosaur.g3db", Model::class.java)
         assetManager.load("mesh/bullet.g3db", Model::class.java)
         assetManager.load("mesh/archer.g3db", Model::class.java)
+        assetManager.load("mesh/diablous.g3db", Model::class.java)
+        assetManager.load("mesh/cerberus.g3db", Model::class.java)
 
         assetManager.finishLoading()
     }

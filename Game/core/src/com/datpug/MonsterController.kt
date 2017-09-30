@@ -7,9 +7,9 @@ import com.badlogic.gdx.graphics.g3d.Environment
 import com.badlogic.gdx.graphics.g3d.ModelBatch
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
+import com.badlogic.gdx.graphics.g3d.utils.AnimationController
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape
-import com.badlogic.gdx.physics.bullet.collision.btCollisionShape
 import com.datpug.entity.Monster
 
 /**
@@ -21,7 +21,10 @@ class MonsterController: ApplicationListener {
     private lateinit var camera: PerspectiveCamera
     private lateinit var environment: Environment
 
-    var monsters: List<Monster> = listOf()
+    private var animationControllers: List<AnimationController> = listOf()
+
+    var monsterDeadListener: OnMonsterDeadListener? = null
+    var monsters: Map<Int, Monster> = mapOf()
         private set
 
     override fun create() {
@@ -47,8 +50,11 @@ class MonsterController: ApplicationListener {
     }
 
     override fun render() {
+        removeDeadMonsters()
+        updateAnimationControllers()
+
         modelBatch.begin(camera)
-        modelBatch.render(monsters)
+        modelBatch.render(monsters.values)
         modelBatch.end()
     }
 
@@ -62,22 +68,50 @@ class MonsterController: ApplicationListener {
         // Dispose all monsters if there is still any left
         monsters.forEach {
             // Remove the game object from the collision world
-            CollisionWorld.instance.removeCollisionObject(it.body)
+            CollisionWorld.instance.removeCollisionObject(it.value.body)
             // Dispose the game object
-            it.dispose()
+            it.value.dispose()
         }
-        monsters = listOf()
+        monsters = mapOf()
     }
 
-    fun generateMonster() {
-        // Setup a new monster
-        val newMonster = Monster(GameAssets.archerModel)
-        newMonster.transform.scale(0.01f, 0.01f, 0.01f)
-        newMonster.body.collisionShape = btBoxShape(Vector3(10f, 10f, 10f))
-        newMonster.body.worldTransform = newMonster.transform
-        // Add to list of monsters
-        monsters = monsters.plus(newMonster)
-        // Add to collision world to get notified when some object collide with it
-        CollisionWorld.instance.addCollisionObject(newMonster.body, CollisionWorld.MONSTER_FLAG, CollisionWorld.BULLET_FLAG)
+    private fun updateAnimationControllers() {
+        animationControllers.forEach { it.update(Gdx.graphics.deltaTime) }
+    }
+
+    private fun removeDeadMonsters() {
+        monsters.forEach {
+            if (it.value.isDead) {
+                CollisionWorld.instance.removeCollisionObject(it.value.body)
+                it.value.dispose()
+                monsterDeadListener?.onMonsterDead(Pair(it.key, it.value))
+            }
+        }
+        monsters = monsters.filterNot { it.value.isDisposed }
+    }
+
+    fun generateMonster(id: Int) {
+        if (!monsters.keys.contains(id)) {
+            // Setup a new monster
+            val newMonster = Monster(GameAssets.cerberusModel)
+            newMonster.transform.scale(0.01f, 0.01f, 0.01f)
+            newMonster.transform.translate(0f, 0f, -750f)
+            newMonster.body.collisionShape = btBoxShape(Vector3(10f, 10f, 10f))
+            newMonster.body.worldTransform = newMonster.transform
+            newMonster.body.userIndex = monsters.size
+            newMonster.body.contactCallbackFlag = CollisionWorld.MONSTER_FLAG
+            // Add to list of monsters
+            monsters = monsters.plus(Pair(id, newMonster))
+            // Create animation controller for this monster
+            val controller = AnimationController(newMonster)
+            controller.setAnimation("Armature|Walk", -1)
+            animationControllers = animationControllers.plus(controller)
+            // Add to collision world to get notified when some object collide with it
+            CollisionWorld.instance.addCollisionObject(newMonster.body)
+        }
+    }
+
+    interface OnMonsterDeadListener {
+        fun onMonsterDead(monster: Pair<Int, Monster>)
     }
 }
