@@ -236,10 +236,20 @@ class VuforiaSession(private val activity: Activity, private var screenOrientati
         dataSetUserDef = objectTracker.createDataSet()
         if (dataSetUserDef == null) {
             Log.d(LOGTAG, "Failed to create a new tracking data.")
+            return
+        }
+
+        if (!dataSetUserDef!!.load("StonesAndChips.xml", STORAGE_TYPE.STORAGE_APPRESOURCE)) {
+            Log.d(LOGTAG, "Failed to load StonesAndChips.")
+        }
+
+        if (!dataSetUserDef!!.load("Tarmac.xml", STORAGE_TYPE.STORAGE_APPRESOURCE)) {
+            Log.d(LOGTAG, "Failed to load Tarmac.")
         }
 
         if (!objectTracker.activateDataSet(dataSetUserDef)) {
             Log.d(LOGTAG, "Failed to activate data set.")
+            return
         }
 
         Log.d(LOGTAG, "Successfully loaded and activated data set.")
@@ -384,42 +394,42 @@ class VuforiaSession(private val activity: Activity, private var screenOrientati
             return
         }
 
-        if (sessionState == SessionState.CREATING) {
-            val newTrackableSource: TrackableSource? = objectTracker.imageTargetBuilder.trackableSource
-            if (newTrackableSource != null) {
-                Log.d(LOGTAG, "Attempting to transfer the trackable source to the dataset")
-
-                // Deactivate current dataset
-                objectTracker.deactivateDataSet(objectTracker.getActiveDataSet(0))
-
-                // Clear the oldest target if the dataset is full or the dataset
-                // already contains five user-defined targets.
-                if (dataSetUserDef!!.hasReachedTrackableLimit() || dataSetUserDef!!.numTrackables >= 5) {
-                    dataSetUserDef!!.destroy(dataSetUserDef!!.getTrackable(0))
-                }
-
-                if (dataSetUserDef!!.numTrackables > 0) {
-                    // We need to stop the extended tracking for the previous target
-                    // so we can enable it for the new one
-                    val previousCreatedTrackableIndex = dataSetUserDef!!.numTrackables - 1
-
-                    objectTracker.resetExtendedTracking()
-                    dataSetUserDef!!.getTrackable(previousCreatedTrackableIndex).stopExtendedTracking()
-                }
-
-                // Add new trackable source
-                val trackable = dataSetUserDef!!.createTrackable(newTrackableSource)
-                if (extendTracking) {
-                    trackable.startExtendedTracking()
-                }
-
-                // Reactivate current dataset
-                objectTracker.activateDataSet(dataSetUserDef)
-
-                // Update session state
-                sessionState = SessionState.IDLE
-            }
-        }
+//        if (sessionState == SessionState.CREATING) {
+//            val newTrackableSource: TrackableSource? = objectTracker.imageTargetBuilder.trackableSource
+//            if (newTrackableSource != null) {
+//                Log.d(LOGTAG, "Attempting to transfer the trackable source to the dataset")
+//
+//                // Deactivate current dataset
+//                objectTracker.deactivateDataSet(objectTracker.getActiveDataSet(0))
+//
+//                // Clear the oldest target if the dataset is full or the dataset
+//                // already contains five user-defined targets.
+//                if (dataSetUserDef!!.hasReachedTrackableLimit() || dataSetUserDef!!.numTrackables >= 5) {
+//                    dataSetUserDef!!.destroy(dataSetUserDef!!.getTrackable(0))
+//                }
+//
+//                if (dataSetUserDef!!.numTrackables > 0) {
+//                    // We need to stop the extended tracking for the previous target
+//                    // so we can enable it for the new one
+//                    val previousCreatedTrackableIndex = dataSetUserDef!!.numTrackables - 1
+//
+//                    objectTracker.resetExtendedTracking()
+//                    dataSetUserDef!!.getTrackable(previousCreatedTrackableIndex).stopExtendedTracking()
+//                }
+//
+//                // Add new trackable source
+//                val trackable = dataSetUserDef!!.createTrackable(newTrackableSource)
+//                if (extendTracking) {
+//                    trackable.startExtendedTracking()
+//                }
+//
+//                // Reactivate current dataset
+//                objectTracker.activateDataSet(dataSetUserDef)
+//
+//                // Update session state
+//                sessionState = SessionState.IDLE
+//            }
+//        }
     }
 
     fun destroyTrackableSource(id: Int) {

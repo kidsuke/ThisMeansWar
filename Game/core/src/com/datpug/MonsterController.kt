@@ -111,6 +111,14 @@ class MonsterController: ApplicationListener {
         }
     }
 
+    fun setCameraProjection(data: FloatArray, fieldOfView: Float) {
+        camera.position.set(data[12], data[13], data[14])
+        camera.up.set(data[4], data[5], data[6])
+        camera.direction.set(data[8], data[9], data[10])
+        camera.fieldOfView = fieldOfView
+        camera.update()
+    }
+
     interface OnMonsterDeadListener {
         fun onMonsterDead(monster: Pair<Int, Monster>)
     }

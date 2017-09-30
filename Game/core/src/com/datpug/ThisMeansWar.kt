@@ -69,6 +69,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 //            perspectiveCamera.fieldOfView = fieldOfView
 //            perspectiveCamera.update()
             //monsterController.generateMonster()
+            //monsterController.setCameraProjection(data, fieldOfView)
             // Add new monster if there isn't any for the id
             monsterController.generateMonster(id)
 //            if (!monsters.keys.contains(id)) {
