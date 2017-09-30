@@ -64,6 +64,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var modelBatch: ModelBatch
 
     private lateinit var puppyController: PuppyController
+    private lateinit var monsterController: MonsterController
     private var monsters: Map<Int, Monster> = mapOf()
 
     inner class MyContactListener : ContactListener() {
@@ -83,21 +84,23 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 //            perspectiveCamera.direction.set(data[8], data[9], data[10])
 //            perspectiveCamera.fieldOfView = fieldOfView
 //            perspectiveCamera.update()
-
+            //monsterController.generateMonster()
             // Add new monster if there isn't any for the id
-            if (!monsters.keys.contains(id)) {
-                val newMonster = Monster(model)
-                newMonster.body.collisionShape = btBoxShape(Vector3(5f, 5f, 5f)) as btCollisionShape
-                monsters = monsters.plus(Pair(id, newMonster))
-                CollisionWorld.instance.addCollisionObject(newMonster.body)
-            }
-            // Find monster with current id and render it
-            val monster: Monster? = monsters[id]
-            if (monster != null) {
-                modelBatch.begin(perspectiveCamera)
-                modelBatch.render(monster, environment)
-                modelBatch.end()
-            }
+            monsterController.generateMonster()
+//            if (!monsters.keys.contains(id)) {
+//                val newMonster = Monster(model)
+//                //newMonster.transform.scale(0.01f, 0.01f, 0.01f)
+//                newMonster.body.collisionShape = btBoxShape(Vector3(5f, 5f, 5f))
+//                monsters = monsters.plus(Pair(id, newMonster))
+//                CollisionWorld.instance.addCollisionObject(newMonster.body)
+//            }
+//            // Find monster with current id and render it
+//            val monster: Monster? = monsters[id]
+//            if (monster != null) {
+//                modelBatch.begin(perspectiveCamera)
+//                modelBatch.render(monster, environment)
+//                modelBatch.end()
+//            }
         }
     }
 
@@ -109,6 +112,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         CollisionWorld.init()
         listener = MyContactListener()
 
+        // Initialize AR Renderer
         arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
         arRenderer.addOnARRenderListener(arDetectListener)
 
@@ -127,8 +131,11 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
 
-        puppyController = PuppyController(perspectiveCamera)
+        puppyController = PuppyController()
         puppyController.create()
+
+        monsterController = MonsterController()
+        monsterController.create()
 
         spriteBatch = SpriteBatch()
         scoreText = BitmapFont()
@@ -139,6 +146,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         modelBatch = ModelBatch()
         model = ModelBuilder().createBox(5f, 5f, 5f, Material(ColorAttribute.createDiffuse(Color.GREEN)), Usage.Position.or(Usage.Normal).toLong())
         monster = Monster(model)
+
+        // Load assets
+        GameAssets.loadAssets()
     }
 
     override fun render() {
@@ -151,7 +161,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         fireIfDetectsMonster()
         removeDeadMonster()
+
         puppyController.render()
+        monsterController.render()
 
         spriteBatch.begin()
         scoreText.draw(spriteBatch, "Score: $score", Gdx.graphics.width.toFloat(), Gdx.graphics.width.toFloat())
@@ -165,7 +177,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private fun fireIfDetectsMonster() {
         val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
-        val monster: Monster? = monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
+        val monster: Monster? = monsterController.monsters.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
 
         if (monster != null) {
             if (!puppyController.isFiring) puppyController.startFire(monster)
@@ -190,7 +202,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         spriteBatch.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
         CollisionWorld.dispose()
-        listener.dispose()
+        //listener.dispose()
     }
 
 }

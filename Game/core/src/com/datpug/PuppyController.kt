@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.Ray
+import com.badlogic.gdx.physics.bullet.collision.ContactListener
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
 import com.badlogic.gdx.utils.TimeUtils
@@ -20,10 +21,9 @@ import com.datpug.entity.Monster
  * Created by longv on 27-Sep-17.
  */
 
-class PuppyController(val camera: Camera) : ApplicationListener {
+class PuppyController: ApplicationListener {
 
     private lateinit var modelBatch: ModelBatch
-    private lateinit var assetManager: AssetManager
     private lateinit var perspectiveCamera: PerspectiveCamera
     private lateinit var environment: Environment
 
@@ -37,15 +37,12 @@ class PuppyController(val camera: Camera) : ApplicationListener {
     private val fireRate: Float = 0.2f
     private var startTime = TimeUtils.millis()
 
-    private var loadingAssets = false
     var isFiring: Boolean = false
         private set
     private var target: Monster? = null
-    private var test = true
 
     override fun create() {
         modelBatch = ModelBatch()
-        assetManager = AssetManager()
 
         perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
         perspectiveCamera.apply {
@@ -62,20 +59,13 @@ class PuppyController(val camera: Camera) : ApplicationListener {
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
 
-        loadAssets()
     }
 
     override fun resize(width: Int, height: Int) {}
 
     override fun render() {
-        if (loadingAssets && assetManager.update()) {
-            doneLoadingAssets()
-        }
-
-        if (!loadingAssets) {
-            if (isFiring) {
-                fire()
-            }
+        if (isFiring) {
+            fire()
         }
     }
 
@@ -89,22 +79,24 @@ class PuppyController(val camera: Camera) : ApplicationListener {
     }
 
     private fun generateLeftProjectile(): GameObject {
-        val projectile = GameObject(projectileModel, leftProjectileSpawnPosition)
+        val projectile = GameObject(GameAssets.bulletModel, leftProjectileSpawnPosition)
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(1f, 1f, -1f), 90f)
         projectile.body.worldTransform = projectile.transform
+        //projectile.body.userValue = leftProjectiles.size
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
-        CollisionWorld.instance.addCollisionObject(projectile.body)
+        CollisionWorld.instance.addCollisionObject(projectile.body, CollisionWorld.BULLET_FLAG, CollisionWorld.MONSTER_FLAG)
         return projectile
     }
 
     private fun generateRightProjectile(): GameObject {
-        val projectile = GameObject(projectileModel, rightProjectileSpawnPosition)
+        val projectile = GameObject(GameAssets.bulletModel, rightProjectileSpawnPosition)
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(-1f, 1f, -1f), -90f)
         projectile.body.worldTransform = projectile.transform
+        //projectile.body.userValue = rightProjectiles.size
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
-        CollisionWorld.instance.addCollisionObject(projectile.body)
+        CollisionWorld.instance.addCollisionObject(projectile.body, CollisionWorld.BULLET_FLAG, CollisionWorld.MONSTER_FLAG)
         return projectile
     }
 
@@ -116,7 +108,6 @@ class PuppyController(val camera: Camera) : ApplicationListener {
             rightProjectiles = rightProjectiles.plus(generateRightProjectile())
             // Reset start time
             startTime = TimeUtils.millis()
-            test = false
         }
 
         // Update projectiles position
@@ -158,16 +149,6 @@ class PuppyController(val camera: Camera) : ApplicationListener {
     }
 
     private fun targetGetsHit(projectile: GameObject): Boolean = projectile.transform.getTranslation(Vector3()).dst(target!!.center) <= 1f
-
-    private fun loadAssets() {
-        assetManager.load("mesh/bullet.g3db", Model::class.java)
-        loadingAssets = true
-    }
-
-    private fun doneLoadingAssets() {
-        projectileModel = assetManager.get("mesh/bullet.g3db", Model::class.java)
-        loadingAssets = false
-    }
 
     fun startFire(target: Monster) {
         isFiring = true
