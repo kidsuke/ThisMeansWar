@@ -10,6 +10,8 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.math.Intersector
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.math.collision.Ray
+import com.badlogic.gdx.physics.bullet.collision.btBoxShape
+import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
 import com.badlogic.gdx.utils.TimeUtils
 import com.datpug.entity.GameObject
 import com.datpug.entity.Monster
@@ -39,6 +41,7 @@ class PuppyController(val camera: Camera) : ApplicationListener {
     var isFiring: Boolean = false
         private set
     private var target: Monster? = null
+    private var test = true
 
     override fun create() {
         modelBatch = ModelBatch()
@@ -87,15 +90,24 @@ class PuppyController(val camera: Camera) : ApplicationListener {
 
     private fun generateLeftProjectile(): GameObject {
         val projectile = GameObject(projectileModel, leftProjectileSpawnPosition)
+        projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(1f, 1f, -1f), 90f)
+        projectile.body.worldTransform = projectile.transform
+        projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
+        CollisionWorld.instance.addCollisionObject(projectile.body)
         return projectile
     }
 
     private fun generateRightProjectile(): GameObject {
         val projectile = GameObject(projectileModel, rightProjectileSpawnPosition)
+        projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(-1f, 1f, -1f), -90f)
+        projectile.body.worldTransform = projectile.transform
+        projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
+        CollisionWorld.instance.addCollisionObject(projectile.body)
         return projectile
     }
+
 
     private fun fire() {
         val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
@@ -104,29 +116,38 @@ class PuppyController(val camera: Camera) : ApplicationListener {
             rightProjectiles = rightProjectiles.plus(generateRightProjectile())
             // Reset start time
             startTime = TimeUtils.millis()
+            test = false
         }
 
         // Update projectiles position
         leftProjectiles.forEach {
             val translation = target!!.center.sub(leftProjectileSpawnPosition).nor().scl(firingSpeed)
             it.transform.trn(translation)
+            it.body.worldTransform = it.transform
         }
         rightProjectiles.forEach {
             val translation = target!!.center.sub(rightProjectileSpawnPosition).nor().scl(firingSpeed)
             it.transform.trn(translation)
+            it.body.worldTransform = it.transform
         }
 
         // Check if target gets hit and remove projectile
-        leftProjectiles = leftProjectiles.filterNot {
-            val getsHit: Boolean = targetGetsHit(it)
-            if (getsHit) target!!.takeDamage(projectileDamage)
-            getsHit
+        leftProjectiles.forEach {
+            if (targetGetsHit(it)) {
+                target!!.takeDamage(projectileDamage)
+                CollisionWorld.instance.removeCollisionObject(it.body)
+                it.dispose()
+            }
         }
-        rightProjectiles = rightProjectiles.filterNot {
-            val getsHit: Boolean = targetGetsHit(it)
-            if (getsHit) target!!.takeDamage(projectileDamage)
-            getsHit
+        rightProjectiles.forEach {
+            if (targetGetsHit(it)) {
+                target!!.takeDamage(projectileDamage)
+                CollisionWorld.instance.removeCollisionObject(it.body)
+                it.dispose()
+            }
         }
+        leftProjectiles = leftProjectiles.filterNot { it.isDisposed }
+        rightProjectiles = rightProjectiles.filterNot { it.isDisposed }
 
         // Render the projectiles
         modelBatch.begin(perspectiveCamera)
