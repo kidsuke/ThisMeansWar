@@ -33,6 +33,11 @@ allprojects {
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
         maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+        maven { url "https://maven.google.com" }
+        ivy{
+            url "http://ivyrep.mbientlab.com"
+            layout "gradle"
+        }
     }
 }
 
@@ -45,6 +50,7 @@ project(":android") {
     dependencies {
         compile fileTree(dir: 'libs', include: ['*.jar'])
         compile project(":core")
+        compile project(":android-core")
 
         //Libgdx
         compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
@@ -75,7 +81,10 @@ project(":android") {
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86"
         natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-x86_64"
 
-        //Kotlin
+        // Metawear
+        compile "com.mbientlab:metawear:3.0.0"
+
+        // Kotlin
         compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 
         // Rx

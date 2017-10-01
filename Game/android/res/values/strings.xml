@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">this-means-war</string>
+    <string name="app_name">Puppies\n vs\nMonster</string>
     <string name="INIT_ERROR_DEVICE_NOT_SUPPORTED">Device is not supported</string>
     <string name="INIT_ERROR_NO_CAMERA_ACCESS">No camera access</string>
     <string name="INIT_LICENSE_ERROR_MISSING_KEY">Missing license key</string>
@@ -11,5 +11,8 @@
     <string name="INIT_LICENSE_ERROR_CANCELED_KEY">License key has been canceled</string>
     <string name="INIT_LICENSE_ERROR_PRODUCT_TYPE_MISMATCH">Product type mismatch</string>
     <string name="INIT_LICENSE_ERROR_UNKNOWN_ERROR">Unknown error</string>
+    <string name="play">Play</string>
+    <string name="quit">Quit</string>
+    <string name="action_settings">Settings</string>
 
 </resources>
