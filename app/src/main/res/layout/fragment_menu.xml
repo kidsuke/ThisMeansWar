@@ -9,49 +9,29 @@
             type="com.datpug.thismeanswar.presentation.menu.MenuViewModel"/>
     </data>
 
-    <android.support.constraint.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@drawable/background"
+        android:orientation="vertical"
+        android:gravity="center">
 
         <Button
             android:id="@+id/hostGameBtn"
-            android:layout_width="match_parent"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/findGameBtn"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            android:text="@string/menu_host_game_button"
-            android:onClick="@{() -> viewModel.hostGame()}"/>
+            android:layout_marginBottom="20dp"
+            android:text="@string/menu_play_button"
+            android:onClick="@{() -> viewModel.hostGame()}" />
 
-        <Button
-            android:id="@+id/findGameBtn"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            app:layout_constraintBottom_toTopOf="@+id/quitBtn"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            android:text="@string/menu_find_game_button"
-            android:onClick="@{() -> viewModel.findGame()}"/>
 
         <Button
             android:id="@+id/quitBtn"
-            android:layout_width="match_parent"
+            android:layout_width="200dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="128dp"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
             android:text="@string/menu_quit_button"
-            android:onClick="@{() -> viewModel.quitGame()}"/>
+            android:onClick="@{() -> viewModel.quitGame()}" />
 
-    </android.support.constraint.ConstraintLayout>
+    </LinearLayout>
 
 </layout>
