@@ -36,7 +36,7 @@ class MonsterController: ApplicationListener {
         camera.apply {
             position.set(10f, 10f, 10f)
             lookAt(0f, 0f, 0f)
-            near = 10f
+            near = 1f
             far = 5000f
             update()
         }
@@ -93,9 +93,10 @@ class MonsterController: ApplicationListener {
     fun generateMonster(id: Int) {
         if (!monsters.keys.contains(id)) {
             // Setup a new monster
-            val newMonster = Monster(GameAssets.cerberusModel)
+            val newMonster = Monster(GameAssets.diabloModel)
             newMonster.transform.scale(0.01f, 0.01f, 0.01f)
-            newMonster.transform.translate(0f, 0f, -750f)
+            //newMonster.transform.rotate(Vector3(0f, 1f, -1f), 90f)
+            newMonster.transform.translate(-100f, 700f, -3000f)
             newMonster.body.collisionShape = btBoxShape(Vector3(10f, 10f, 10f))
             newMonster.body.worldTransform = newMonster.transform
             newMonster.body.userIndex = monsters.size
@@ -104,19 +105,21 @@ class MonsterController: ApplicationListener {
             monsters = monsters.plus(Pair(id, newMonster))
             // Create animation controller for this monster
             val controller = AnimationController(newMonster)
-            controller.setAnimation("Armature|Walk", -1)
+            controller.setAnimation("Armature|Attack", -1)
             animationControllers = animationControllers.plus(controller)
             // Add to collision world to get notified when some object collide with it
             CollisionWorld.instance.addCollisionObject(newMonster.body)
         }
     }
 
-    fun setCameraProjection(data: FloatArray, fieldOfView: Float) {
-        camera.position.set(data[12], data[13], data[14])
-        camera.up.set(data[4], data[5], data[6])
-        camera.direction.set(data[8], data[9], data[10])
-        camera.fieldOfView = fieldOfView
-        camera.update()
+    fun setCameraProjection(id: Int, data: FloatArray) {
+        val monster: Monster? = monsters[id]
+        if (monster != null) {
+            camera.position.set(data[12], data[13], data[14])
+            camera.up.set(data[4], data[5], data[6])
+            camera.direction.set(data[8], data[9], data[10])
+            camera.update()
+        }
     }
 
     interface OnMonsterDeadListener {

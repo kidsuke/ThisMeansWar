@@ -16,8 +16,8 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
 
     private var mRenderingPrimitives: RenderingPrimitives? = null
     private var currentView = VIEW.VIEW_SINGULAR
-    private var mNearPlane = -1.0f
-    private var mFarPlane = -1.0f
+    private var mNearPlane = 1f
+    private var mFarPlane = 5000f
 
     private var videoBackgroundTex: GLTextureUnit? = null
 
@@ -101,8 +101,6 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
         Vuforia.onSurfaceChanged(width, height)
     }
 
-    private var fieldOfViewRadians: Float? = null
-
     // The render function.
     override fun render() {
         if (!isActive) return
@@ -112,30 +110,86 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
         renderer.begin(state)
         renderVideoBackground()
 
+        // We must detect if background reflection is active and adjust the
+        // culling direction.
+        // If the reflection is active, this means the post matrix has been
+        // reflected as well,
+        // therefore standard counter clockwise face culling will result in
+        // "inside out" models.
+        if (Renderer.getInstance().videoBackgroundConfig.reflection == VIDEO_BACKGROUND_REFLECTION.VIDEO_BACKGROUND_REFLECTION_ON)
+            GLES20.glFrontFace(GLES20.GL_CW)  // Front camera
+        else
+            GLES20.glFrontFace(GLES20.GL_CCW)   // Back camera
+
+        // We get a list of views which depend on the mode we are working on, for mono we have
+        // only one view, in stereo we have three: left, right and postprocess
+        val viewList = mRenderingPrimitives!!.renderingViews
+
+        // Cycle through the view list
+        for (v in 0 until viewList.numViews) {
+            // Get the view id
+            val viewID = viewList.getView(v.toInt())
+
+            val viewport: Vec4I
+            // Get the viewport for that specific view
+            viewport = mRenderingPrimitives!!.getViewport(viewID)
+
+            // Set viewport for current view
+            GLES20.glViewport(viewport.data[0], viewport.data[1], viewport.data[2], viewport.data[3])
+
+            // Set scissor
+            GLES20.glScissor(viewport.data[0], viewport.data[1], viewport.data[2], viewport.data[3])
+
+            // Get projection matrix for the current view. COORDINATE_SYSTEM_CAMERA used for AR and
+            // COORDINATE_SYSTEM_WORLD for VR
+            val projMatrix = mRenderingPrimitives!!.getProjectionMatrix(viewID, COORDINATE_SYSTEM_TYPE.COORDINATE_SYSTEM_CAMERA)
+
+            // Create GL matrix setting up the near and far planes
+            val rawProjectionMatrixGL = Tool.convertPerspectiveProjection2GLMatrix(projMatrix, mNearPlane, mFarPlane).data
+
+            // Apply the appropriate eye adjustment to the raw projection matrix, and assign to the global variable
+            val eyeAdjustmentGL = Tool.convert2GLMatrix(mRenderingPrimitives!!.getEyeDisplayAdjustmentMatrix(viewID)).data
+
+            val projectionMatrix = FloatArray(16)
+            // Apply the adjustment to the projection matrix
+            Matrix.multiplyMM(projectionMatrix, 0, rawProjectionMatrixGL, 0, eyeAdjustmentGL, 0)
+
+            currentView = viewID
+
+            // Call renderFrame from the app renderer class which implements SampleAppRendererControl
+            // This will be called for MONO, LEFT and RIGHT views, POSTPROCESS will not render the
+            // frame
+            if (currentView != VIEW.VIEW_POSTPROCESS) renderFrame(state, projectionMatrix)
+        }
+
+        renderer.end()
+    }
+
+    fun renderFrame(state: State, projectionMatrix: FloatArray) {
         // did we find any trackables this frame?
         for (index in 0 until state.numTrackableResults) {
             //remember trackable
             val trackableResult: TrackableResult = state.getTrackableResult(index)
 
             val modelViewMatrix_Vuforia: Matrix44F = Tool.convertPose2GLMatrix(trackableResult.pose)
-            val rawData: FloatArray = modelViewMatrix_Vuforia.data
+            val modelViewMatrix: FloatArray = modelViewMatrix_Vuforia.data
 
             val rotated: FloatArray
             if (renderer.videoBackgroundConfig.reflection == VIDEO_BACKGROUND_REFLECTION.VIDEO_BACKGROUND_REFLECTION_ON) {
                 // Front camera
                 rotated = floatArrayOf(
-                        rawData[1], rawData[0], rawData[2], rawData[3],
-                        rawData[5], rawData[4], rawData[6], rawData[7],
-                        rawData[9], rawData[8], rawData[10], rawData[11],
-                        rawData[13], rawData[12], rawData[14], rawData[15]
+                    modelViewMatrix[1], modelViewMatrix[0], modelViewMatrix[2], modelViewMatrix[3],
+                    modelViewMatrix[5], modelViewMatrix[4], modelViewMatrix[6], modelViewMatrix[7],
+                    modelViewMatrix[9], modelViewMatrix[8], modelViewMatrix[10], modelViewMatrix[11],
+                    modelViewMatrix[13], modelViewMatrix[12], modelViewMatrix[14], modelViewMatrix[15]
                 )
             } else {
                 // Back camera
                 rotated = floatArrayOf(
-                        rawData[1], -rawData[0], rawData[2], rawData[3],
-                        rawData[5], -rawData[4], rawData[6], rawData[7],
-                        rawData[9], -rawData[8], rawData[10], rawData[11],
-                        rawData[13], -rawData[12], rawData[14], rawData[15]
+                    modelViewMatrix[1], -modelViewMatrix[0], modelViewMatrix[2], modelViewMatrix[3],
+                    modelViewMatrix[5], -modelViewMatrix[4], modelViewMatrix[6], modelViewMatrix[7],
+                    modelViewMatrix[9], -modelViewMatrix[8], modelViewMatrix[10], modelViewMatrix[11],
+                    modelViewMatrix[13], -modelViewMatrix[12], modelViewMatrix[14], modelViewMatrix[15]
                 )
             }
             val rot = Matrix44F()
@@ -143,17 +197,13 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
             val inverse = SampleMath.Matrix44FInverse(rot)
             val transp = SampleMath.Matrix44FTranspose(inverse)
 
-            //calculate filed of view
-            val calibration = CameraDevice.getInstance().cameraCalibration
-            val size = calibration.size
-            val focalLength = calibration.focalLength
-            fieldOfViewRadians = (2 * Math.atan((0.5f * size.data[0] / focalLength.data[0]).toDouble())).toFloat()
+            val modelViewProjection = FloatArray(16)
+            Matrix.translateM(modelViewMatrix, 0, 0.0f, 0.0f, 0.01f)
+            Matrix.scaleM(modelViewMatrix, 0, 0.01f, 0.01f, 0.01f)
+            Matrix.multiplyMM(modelViewProjection, 0, projectionMatrix, 0, modelViewMatrix, 0)
 
-            val data = transp.data
-            arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id, transp.data, fieldOfViewRadians!!) }
+            arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id, transp.data, modelViewProjection) }
         }
-
-        renderer.end()
     }
 
     /**

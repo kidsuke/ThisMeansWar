@@ -20,6 +20,7 @@ import com.datpug.entity.Monster
 import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.ModelBatch
+import com.badlogic.gdx.graphics.g3d.utils.ShaderProvider
 import com.datpug.entity.GameObject
 
 
@@ -61,31 +62,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var listener: MyContactListener
 
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
-        override fun onARDetected(id: Int, data: FloatArray, fieldOfView: Float) {
-            // Update camera so that it syncs with the AR camera
-//            perspectiveCamera.position.set(data[12], data[13], data[14])
-//            perspectiveCamera.up.set(data[4], data[5], data[6])
-//            perspectiveCamera.direction.set(data[8], data[9], data[10])
-//            perspectiveCamera.fieldOfView = fieldOfView
-//            perspectiveCamera.update()
-            //monsterController.generateMonster()
-            //monsterController.setCameraProjection(data, fieldOfView)
-            // Add new monster if there isn't any for the id
+        override fun onARDetected(id: Int, data: FloatArray, modelViewProjection: FloatArray) {
             monsterController.generateMonster(id)
-//            if (!monsters.keys.contains(id)) {
-//                val newMonster = Monster(model)
-//                //newMonster.transform.scale(0.01f, 0.01f, 0.01f)
-//                newMonster.body.collisionShape = btBoxShape(Vector3(5f, 5f, 5f))
-//                monsters = monsters.plus(Pair(id, newMonster))
-//                CollisionWorld.instance.addCollisionObject(newMonster.body)
-//            }
-//            // Find monster with current id and render it
-//            val monster: Monster? = monsters[id]
-//            if (monster != null) {
-//                modelBatch.begin(perspectiveCamera)
-//                modelBatch.render(monster, environment)
-//                modelBatch.end()
-//            }
+            monsterController.setCameraProjection(id, data)
         }
     }
 
@@ -103,9 +82,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
         perspectiveCamera.apply {
-            position.set(10f, 10f, 10f)
-            lookAt(0f, 0f, 0f)
-            near = 10f
+            position.set(0f, 0f, 0f)
+            lookAt(0f, 0f, 1f)
+            near = 1f
             far = 5000f
             update()
         }
@@ -143,7 +122,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         CollisionWorld.instance.performDiscreteCollisionDetection()
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
-        Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
+        //Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
         arRenderer.render()
 
         //fireIfDetectsMonster()

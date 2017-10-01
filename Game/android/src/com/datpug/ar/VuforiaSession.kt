@@ -252,6 +252,18 @@ class VuforiaSession(private val activity: Activity, private var screenOrientati
             return
         }
 
+        val numTrackables = dataSetUserDef!!.numTrackables
+        for (count in 0 until numTrackables) {
+            val trackable = dataSetUserDef!!.getTrackable(count)
+            if (extendTracking) {
+                trackable.startExtendedTracking()
+            }
+
+            val name = "Current Dataset : " + trackable.getName()
+            trackable.setUserData(name)
+            Log.d(LOGTAG, "UserData:Set the following user data " + trackable.getUserData() as String)
+        }
+
         Log.d(LOGTAG, "Successfully loaded and activated data set.")
     }
 
