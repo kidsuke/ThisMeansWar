@@ -6,19 +6,20 @@ import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Direction
-import com.datpug.entity.Puppy
 
 /**
  * Created by longv on 27-Sep-17.
  */
 
-object PuppyController: ApplicationListener {
+object PlayerController : ApplicationListener {
 
     var playerHealth = 1000
         private set
     var playerAnswers: List<Direction> = listOf()
         private set
-    private var allowAnswer = true
+    var startAnswer = false
+
+    private var logger = Logger("TEST")
 
     override fun create() {
         // Listen to answers' result
@@ -52,23 +53,28 @@ object PuppyController: ApplicationListener {
 
     override fun dispose() {}
 
-    fun startAnswer() {
-        allowAnswer = true
-    }
-
-    fun stopAnswer() {
-        allowAnswer = false
-    }
-
     class GameGestureListener: GestureDetector.GestureListener {
         override fun fling(velocityX: Float, velocityY: Float, button: Int): Boolean {
-            if (allowAnswer) {
+            if (startAnswer) {
+                logger.error("WTFFFFFFFFFFFFFF")
                 playerAnswers = if (Math.abs(velocityX) > Math.abs(velocityY)) {
-                    if (velocityX > 0) playerAnswers.plus(Direction.RIGHT)
-                    else playerAnswers.plus(Direction.LEFT)
+                    if (velocityX > 0) {
+                        logger.error("RIGHT")
+                        playerAnswers.plus(Direction.RIGHT)
+                    }
+                    else {
+                        logger.error("LEFT")
+                        playerAnswers.plus(Direction.LEFT)
+                    }
                 } else {
-                    if (velocityY > 0) playerAnswers.plus(Direction.DOWN)
-                    else playerAnswers.plus(Direction.UP)
+                    if (velocityY > 0) {
+                        logger.error("DOWN")
+                        playerAnswers.plus(Direction.DOWN)
+                    }
+                    else {
+                        logger.error("UP")
+                        playerAnswers.plus(Direction.UP)
+                    }
                 }
             }
 

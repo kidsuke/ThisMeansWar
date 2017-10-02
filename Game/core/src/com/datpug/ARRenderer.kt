@@ -21,6 +21,6 @@ abstract class ARRenderer {
     }
 
     interface OnARDetectListener {
-        fun onARDetected(id: Int, data: FloatArray, modelViewProjection: FloatArray)
+        fun onARDetected(id: Int, cameraProjection: FloatArray, modelViewProjection: FloatArray)
     }
 }

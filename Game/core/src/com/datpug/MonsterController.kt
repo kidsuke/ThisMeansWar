@@ -2,16 +2,13 @@ package com.datpug
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.Environment
 import com.badlogic.gdx.graphics.g3d.ModelBatch
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.utils.AnimationController
-import com.badlogic.gdx.math.Matrix4
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.physics.bullet.collision.btBoxShape
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
 import com.datpug.entity.Puppy
@@ -19,11 +16,15 @@ import com.datpug.entity.Puppy
 /**
  * Created by longv on 30-Sep-17.
  */
-class MonsterController: ApplicationListener {
+object MonsterController: ApplicationListener {
     private val logger = Logger("TESTING")
+
     private lateinit var modelBatch: ModelBatch
     private lateinit var camera: PerspectiveCamera
     private lateinit var environment: Environment
+
+    private var currentMonster: Monster? = null
+    private var monsterAnimController: AnimationController? = null
 
     private var animationControllers: List<AnimationController> = listOf()
 
@@ -51,15 +52,39 @@ class MonsterController: ApplicationListener {
             set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
+
+        // Listen to answers' result
+        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
+            override fun onCorrectAnswer() {
+                // Animate Hit animation
+                monsterAnimController?.animate("Armature|Hit", 2, null, 1f)
+                // Health decrease
+                currentMonster!!.takeDamage(100f)
+                // Animate appropriate animation
+                if (currentMonster!!.isDead) {
+                    monsterAnimController?.queue("Armature|Idle", -1, 1f, null, 1f)
+                    GameManager.startNextLevel()
+                } else {
+                    monsterAnimController?.queue("Armature|Idle", 3, 1f, null, 1f)
+                    monsterAnimController?.queue("Armature|Walk", -1, 1f, null, 1f)
+                }
+            }
+
+            override fun onWrongAnswer() {
+                monsterAnimController?.animate("Armature|Attack", 2, null, 1f)
+                monsterAnimController?.queue("Armature|Walk", -1, 1f, null, 1f)
+            }
+        })
     }
 
     override fun render() {
-        removeDeadMonsters()
-        updateAnimationControllers()
+        monsterAnimController?.update(Gdx.graphics.deltaTime * 0.75f)
 
-        modelBatch.begin(camera)
-        modelBatch.render(monsters.values)
-        modelBatch.end()
+        if (currentMonster != null) {
+            modelBatch.begin(camera)
+            modelBatch.render(currentMonster)
+            modelBatch.end()
+        }
     }
 
     override fun pause() {}
@@ -79,80 +104,46 @@ class MonsterController: ApplicationListener {
         monsters = mapOf()
     }
 
-    private fun updateAnimationControllers() {
-        animationControllers.forEach { it.update(Gdx.graphics.deltaTime) }
-    }
-
-    private fun removeDeadMonsters() {
-        monsters.forEach {
-            if (it.value.isDead) {
-                CollisionWorld.instance.removeCollisionObject(it.value.body)
-                it.value.dispose()
-                monsterDeadListener?.onMonsterDead(Pair(it.key, it.value))
+    fun generateMonster(data: FloatArray) {
+        if (GameManager.isSearchingForMonster) {
+            currentMonster = when (GameManager.currentLevel) {
+                GameManager.Level.LEVEL_1 -> {
+                    Monster(GameAssets.archerModel)
+                }
+                GameManager.Level.LEVEL_2 -> {
+                    Monster(GameAssets.cerberusModel)
+                }
+                GameManager.Level.LEVEL_3 -> {
+                    Monster(GameAssets.diabloModel)
+                }
             }
-        }
-        monsters = monsters.filterNot { it.value.isDisposed }
-    }
-
-    fun generateMonster(id: Int, data: FloatArray) {
-        if (!monsters.keys.contains(id)) {
-            // Setup a new monster
-            val newMonster = Monster(GameAssets.diabloModel)
-            newMonster.transform.setToWorld(
-                Vector3(data[12], data[13], data[14]),
-                Vector3(data[8], data[9], data[10]),
-                Vector3(data[4], data[5], data[6])
+            currentMonster!!.transform.setToWorld(
+                    Vector3(data[12], data[13], data[14]),
+                    Vector3(data[8], data[9], data[10]),
+                    Vector3(data[4], data[5], data[6])
             )
-            //newMonster.transform.scale(0.000001f, 0.000001f, 0.000001f)
-            //newMonster.transform.rotate(Vector3(0f, 1f, 0f), -180f)
-            //newMonster.transform.translate(-100f, 700f, -3000f)
-            newMonster.body.collisionShape = btBoxShape(Vector3(10f, 10f, 10f))
-            newMonster.body.worldTransform = newMonster.transform
-            newMonster.body.userIndex = monsters.size
-            newMonster.body.contactCallbackFlag = CollisionWorld.MONSTER_FLAG
-            // Add to list of monsters
-            monsters = monsters.plus(Pair(id, newMonster))
-            // Create animation controller for this monster
-            val controller = AnimationController(newMonster)
-            controller.setAnimation("Armature|Attack", -1)
-            animationControllers = animationControllers.plus(controller)
-            // Add to collision world to get notified when some object collide with it
-            CollisionWorld.instance.addCollisionObject(newMonster.body)
+            // Setup animation controller for monster. Pose is the starting anim
+            monsterAnimController = AnimationController(currentMonster)
+            monsterAnimController!!.setAnimation("Armature|Pose", -1)
+            // Stop searching for monster and deal with this one...
+            GameManager.isSearchingForMonster = false
+            // But first has a chat first lol
+            monsterAnimController!!.animate("Armature|Walk", -1, null, 1f)
+            GameManager.startCurrentLevel()
         } else {
-            val monster = monsters[id]
-            monster!!.transform.setToWorld(
+            currentMonster!!.transform.setToWorld(
                 Vector3(data[12], data[13], data[14]),
                 Vector3(data[8], data[9], data[10]),
                 Vector3(data[4], data[5], data[6])
             )
-            logger.error(
-                    """
-                    Monster:
-                   ${data[12]}, ${data[13]}, ${data[14]},
-                    ${data[4]}, ${data[5]}, ${data[6]},
-                    ${data[8]}, ${data[9]}, ${data[10]},
-                """
-            )
-            monster.body.worldTransform = monster.transform
         }
     }
 
-    fun setCameraProjection(id: Int, data: FloatArray) {
-//        val monster: Monster? = monsters[id]
-//        if (monster != null) {
-        logger.error(
-                """
-                    Camera:
-                   ${data[12]}, ${data[13]}, ${data[14]},
-                    ${data[4]}, ${data[5]}, ${data[6]},
-                    ${data[8]}, ${data[9]}, ${data[10]},
-                """
-        )
-            camera.position.set(data[12], data[13], data[14])
-            camera.up.set(data[4], data[5], data[6])
-            camera.direction.set(data[8], data[9], data[10])
-            camera.update()
-//        }
+    fun setCameraProjection(data: FloatArray) {
+        camera.position.set(data[12], data[13], data[14])
+        camera.up.set(data[4], data[5], data[6])
+        camera.direction.set(data[8], data[9], data[10])
+        camera.update()
     }
 
     interface OnMonsterDeadListener {

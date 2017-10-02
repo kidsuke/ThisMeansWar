@@ -1,6 +1,8 @@
 package com.datpug
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.assets.AssetManager
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g3d.Model
 
 /**
@@ -15,6 +17,11 @@ object GameAssets {
     val dinosaurModel: Model by lazy { getModel(fileName = "mesh/dinosaur.g3db") }
     val batModel: Model by lazy { getModel(fileName = "mesh/bat.g3db") }
     val bulletModel: Model by lazy { getModel(fileName = "mesh/bullet.g3db") }
+
+    val arrowUpTexture: Texture by lazy { getTexture(fileName = "sprite/arrowUp.png") }
+    val arrowDownTexture: Texture by lazy { getTexture(fileName = "sprite/arrowDown.png") }
+    val arrowRightTexture: Texture by lazy { getTexture(fileName = "sprite/arrowRight.png") }
+    val arrowLeftTexture: Texture by lazy { getTexture(fileName = "sprite/arrowLeft.png") }
 
     private val assetManager: AssetManager = AssetManager()
 
@@ -38,5 +45,15 @@ object GameAssets {
             throw IllegalStateException("Asset [$fileName] has not been loaded")
         }
         return model
+    }
+
+    private fun getTexture(fileName: String): Texture {
+        val texture: Texture
+        try {
+            texture = Texture(Gdx.files.internal(fileName))
+        } catch (e: Exception) {
+            throw IllegalStateException("Asset [$fileName] cannot be found")
+        }
+        return texture
     }
 }

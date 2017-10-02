@@ -5,24 +5,17 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
-import com.badlogic.gdx.graphics.VertexAttributes.Usage
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g3d.*
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.math.Intersector
-import com.badlogic.gdx.math.collision.Ray
 import com.badlogic.gdx.physics.bullet.Bullet
-import com.badlogic.gdx.physics.bullet.collision.*
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
-import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.ModelBatch
-import com.badlogic.gdx.graphics.g3d.utils.ShaderProvider
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.datpug.entity.GameObject
+import com.badlogic.gdx.utils.TimeUtils
 
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
@@ -31,14 +24,15 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private val scoreTextScale = 5f
     private val scoreTextOffset = 15f
 
+    private val searchingTextScale = 5f
+
+
     private val healthBarWidth = 500f
     private val healthBarHeight = 50f
     private val healthBarOffset = 30f
 
     private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
     private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
-
-    private val logger = Logger("TESTING")
 
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var scoreText: BitmapFont
@@ -49,40 +43,16 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     private lateinit var model: Model
     private lateinit var modelBatch: ModelBatch
 
-    private lateinit var puppyController: PuppyController
-    private lateinit var monsterController: MonsterController
-
-    inner class MyContactListener : ContactListener() {
-        override fun onContactAdded(colObj0: btCollisionObject, partId0: Int, index0: Int, colObj1: btCollisionObject, partId1: Int, index1: Int): Boolean {
-            //logger.error("COLLIDEEEEEEEEEEEEEEEEEEEEEEE")
-            if (colObj0.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
-                puppyController.collidedProjectile(colObj0)
-            }
-            else if (colObj1.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
-                puppyController.collidedProjectile(colObj1)
-            }
-            return true
-        }
-
-
-    }
-
-    private lateinit var listener: MyContactListener
-
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
-        override fun onARDetected(id: Int, data: FloatArray, modelViewProjection: FloatArray) {
-            monsterController.generateMonster(id, modelViewProjection)
-            monsterController.setCameraProjection(id, data)
+        override fun onARDetected(id: Int, cameraProjection: FloatArray, modelViewProjection: FloatArray) {
+            MonsterController.generateMonster(modelViewProjection)
+            MonsterController.setCameraProjection(cameraProjection)
         }
     }
 
     override fun create() {
         // Initialize Bullet, this must be done before using any class of this lib
         Bullet.init()
-
-        // Initialize CollisionWord which helps detect collision
-        CollisionWorld.init()
-        listener = MyContactListener()
 
         // Initialize AR Renderer
         arRenderer.initRendering(screenWidth.toInt(), screenHeight.toInt())
@@ -103,17 +73,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
             add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
         }
 
-        puppyController = PuppyController()
-        puppyController.create()
-
-        monsterController = MonsterController()
-        monsterController.create()
-        monsterController.monsterDeadListener = object : MonsterController.OnMonsterDeadListener {
-            override fun onMonsterDead(monster: Pair<Int, Monster>) {
-                score += monster.second.score
-                arRenderer.removeAR(monster.first)
-            }
-        }
+        GameManager.init()
+        PlayerController.create()
+        MonsterController.create()
 
         shapeRenderer = ShapeRenderer()
 
@@ -128,19 +90,23 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     }
 
     override fun render() {
-        // Detect collision
-        CollisionWorld.instance.performDiscreteCollisionDetection()
-
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
         arRenderer.render()
-        renderHealthBar()
-        renderScore()
-        //fireIfDetectsMonster()
+        GameManager.update()
+        PlayerController.render()
+        MonsterController.render()
 
-        puppyController.render()
-        monsterController.render()
-
+        if (GameManager.isSearchingForMonster) {
+            renderSearchingText()
+        } else {
+            renderHealthBar()
+            renderScoreText()
+        }
+//
+//        if (GameManager.showChallenge) {
+//            renderChallenge()
+//        }
     }
 
     override fun resize(width: Int, height: Int) {
@@ -163,21 +129,16 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         shapeRenderer.end()
     }
 
-    private fun renderScore() {
+    private fun renderScoreText() {
         spriteBatch.begin()
         scoreText.draw(spriteBatch, "Score: $score", scoreTextOffset, screenHeight - scoreTextOffset)
         spriteBatch.end()
     }
 
-    private fun fireIfDetectsMonster() {
-        val ray: Ray = perspectiveCamera.getPickRay(Gdx.graphics.width.toFloat()/2, Gdx.graphics.height.toFloat()/2)
-        val monster: Monster? = monsterController.monsters.values.find { Intersector.intersectRayBoundsFast(ray, it.boundingBox) && !it.isDead }
-
-        if (monster != null) {
-            if (!puppyController.isFiring) puppyController.startFire(monster)
-        } else {
-            if (puppyController.isFiring) puppyController.stopFire()
-        }
+    private fun renderSearchingText() {
+        spriteBatch.begin()
+        scoreText.draw(spriteBatch, "Searching for monsters...", screenWidth/2, screenHeight/2)
+        spriteBatch.end()
     }
 
     override fun dispose() {
@@ -185,8 +146,5 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         model.dispose()
         spriteBatch.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
-        CollisionWorld.dispose()
-        listener.dispose()
     }
-
 }
