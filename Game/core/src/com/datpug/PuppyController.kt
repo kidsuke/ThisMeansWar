@@ -34,7 +34,7 @@ class PuppyController: ApplicationListener {
     private val rightProjectileSpawnPosition: Vector3 = Vector3(20f, -10f, 0f)
     private val projectileDamage: Float = 50f
     private val firingSpeed: Float = 1f
-    private val fireRate: Float = 0.2f
+    private val fireRate: Float = 0.6f
     private var startTime = TimeUtils.millis()
 
     var isFiring: Boolean = false
@@ -84,7 +84,6 @@ class PuppyController: ApplicationListener {
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(1f, 1f, -1f), 90f)
         projectile.body.worldTransform = projectile.transform
-        projectile.body.userData = projectile
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
         projectile.body.contactCallbackFlag = CollisionWorld.BULLET_FLAG
         projectile.body.contactCallbackFilter = CollisionWorld.MONSTER_FLAG
@@ -97,7 +96,6 @@ class PuppyController: ApplicationListener {
         projectile.body.collisionShape = btBoxShape(Vector3(2.5f, 0.5f, 2.5f))
         projectile.transform.rotate(Vector3(-1f, 1f, -1f), -90f)
         projectile.body.worldTransform = projectile.transform
-        projectile.body.userData = projectile
         projectile.body.collisionFlags = projectile.body.collisionFlags.or(btCollisionObject.CollisionFlags.CF_CUSTOM_MATERIAL_CALLBACK)
         projectile.body.contactCallbackFlag = CollisionWorld.BULLET_FLAG
         projectile.body.contactCallbackFilter = CollisionWorld.MONSTER_FLAG
@@ -149,17 +147,22 @@ class PuppyController: ApplicationListener {
         rightProjectiles = listOf()
     }
 
-    fun removeUnusedProjectiles() {
-//        leftProjectiles.forEach { if (it.isDisposed) CollisionWorld.instance.removeCollisionObject(it.body) }
-//        rightProjectiles.forEach { if (it.isDisposed) CollisionWorld.instance.removeCollisionObject(it.body) }
-//        leftProjectiles = leftProjectiles.filterNot { it.isDisposed }
-//        rightProjectiles = rightProjectiles.filterNot { it.isDisposed }
+    private fun removeUnusedProjectiles() {
+//        list.forEach {
+//            CollisionWorld.instance.removeCollisionObject(it.body)
+//            it.dispose()
+//        }
+//        leftProjectiles = leftProjectiles.filterNot { list.contains(it) }
+//        rightProjectiles = rightProjectiles.filterNot { list.contains(it) }
+        //list = listOf()
     }
 
-    fun collidedProjectile() {
+    var list: List<GameObject> = listOf()
+    fun collidedProjectile(colObj: btCollisionObject) {
         target?.takeDamage(projectileDamage)
-        //CollisionWorld.instance.removeCollisionObject(projectile.body)
-        //projectile.dispose()
+        //CollisionWorld.instance.removeCollisionObject(colObj)
+        val projectile: GameObject? = leftProjectiles.plus(rightProjectiles).find { it.body === colObj }
+        if (projectile != null) list = list.plus(projectile)
     }
 
 }

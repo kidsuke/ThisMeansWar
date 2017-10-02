@@ -198,8 +198,9 @@ class VuforiaRenderer(val arAppSession: VuforiaSession, val deviceMode: Int, val
             val transp = SampleMath.Matrix44FTranspose(inverse)
 
             val modelViewProjection = FloatArray(16)
-            Matrix.translateM(modelViewMatrix, 0, 0.0f, 0.0f, 0.01f)
-            Matrix.scaleM(modelViewMatrix, 0, 0.01f, 0.01f, 0.01f)
+            Matrix.translateM(modelViewMatrix, 0, -20f, -250f, 2000f)
+            Matrix.rotateM(modelViewMatrix, 0, 160f, 1f, 0f, 0f)
+            Matrix.scaleM(modelViewMatrix, 0, 0.00001f, 0.00001f, 0.00001f)
             Matrix.multiplyMM(modelViewProjection, 0, projectionMatrix, 0, modelViewMatrix, 0)
 
             arDetectListeners.forEach { it.onARDetected(trackableResult.trackable.id, transp.data, modelViewProjection) }

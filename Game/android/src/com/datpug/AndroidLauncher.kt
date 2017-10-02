@@ -45,9 +45,6 @@ class AndroidLauncher : AndroidApplication() {
                 onComplete = {
                     //After starting successfully, activate game AR renderer
                     theGame.arRenderer.setRendererActive(true)
-                    // Start user defined targets
-                    vuforiaSession.startUserDefinedTargets()
-                    addOverlayView(true)
                 },
                 onError = {
                     // An error has occurred
@@ -132,25 +129,5 @@ class AndroidLauncher : AndroidApplication() {
 
             return true
         }
-    }
-
-    // Adds the Overlay view to the GLView
-    private fun addOverlayView(initLayout: Boolean) {
-        // Inflates the Overlay Layout to be displayed above the Camera View
-        val inflater = LayoutInflater.from(this)
-        val mUILayout: View = inflater.inflate(R.layout.test_layout, null, false)
-
-        mUILayout.visibility = View.VISIBLE
-
-        // Gets a reference to the Camera button
-        val mCameraButton: Button = mUILayout.findViewById(R.id.button)
-        mCameraButton.setOnClickListener {
-            if (vuforiaSession.isUserDefinedTargetsRunning())
-            vuforiaSession.buildTrackableSource()
-        }
-        // Adds the inflated layout to the view
-        addContentView(mUILayout, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-
-        mUILayout.bringToFront()
     }
 }

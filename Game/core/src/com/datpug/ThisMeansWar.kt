@@ -44,15 +44,13 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     inner class MyContactListener : ContactListener() {
         override fun onContactAdded(colObj0: btCollisionObject, partId0: Int, index0: Int, colObj1: btCollisionObject, partId1: Int, index1: Int): Boolean {
-            print("yaya")
-            logger.error("COLLIDEEEEEEEEEEEEEEEEEEEEEEE")
-//            if (colObj0.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
-//                puppyController.collidedProjectile(colObj0.userData as GameObject)
-//            }
-//            if (colObj1.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
-//                puppyController.collidedProjectile(colObj1.userData as GameObject)
-//            }
-            puppyController.collidedProjectile()
+            //logger.error("COLLIDEEEEEEEEEEEEEEEEEEEEEEE")
+            if (colObj0.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
+                puppyController.collidedProjectile(colObj0)
+            }
+            else if (colObj1.contactCallbackFlag == CollisionWorld.BULLET_FLAG) {
+                puppyController.collidedProjectile(colObj1)
+            }
             return true
         }
 
@@ -63,7 +61,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
         override fun onARDetected(id: Int, data: FloatArray, modelViewProjection: FloatArray) {
-            monsterController.generateMonster(id)
+            monsterController.generateMonster(id, modelViewProjection)
             monsterController.setCameraProjection(id, data)
         }
     }
@@ -122,7 +120,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         CollisionWorld.instance.performDiscreteCollisionDetection()
 
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
-        //Gdx.gl.glViewport(0, 0, Gdx.graphics.width, Gdx.graphics.height)
+
         arRenderer.render()
 
         //fireIfDetectsMonster()
@@ -131,7 +129,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         monsterController.render()
 
         spriteBatch.begin()
-        scoreText.draw(spriteBatch, "Score: $score", Gdx.graphics.width.toFloat(), Gdx.graphics.width.toFloat())
+        scoreText.draw(spriteBatch, "Score: $score", 100f, 100f)
         spriteBatch.end()
     }
 
