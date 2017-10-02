@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.physics.bullet.collision.btBoxShape
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
+import com.datpug.entity.Puppy
 
 /**
  * Created by longv on 30-Sep-17.

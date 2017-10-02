@@ -22,6 +22,7 @@ import com.datpug.entity.Monster
  */
 
 class PuppyController: ApplicationListener {
+    private var totalHeath = 2000
 
     private lateinit var modelBatch: ModelBatch
     private lateinit var perspectiveCamera: PerspectiveCamera

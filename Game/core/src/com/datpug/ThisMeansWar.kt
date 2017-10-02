@@ -21,18 +21,28 @@ import com.badlogic.gdx.physics.bullet.collision.btCollisionObject
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.ModelBatch
 import com.badlogic.gdx.graphics.g3d.utils.ShaderProvider
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.datpug.entity.GameObject
 
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private var score: Int = 0
+    private val scoreTextScale = 5f
+    private val scoreTextOffset = 15f
 
+    private val healthBarWidth = 500f
+    private val healthBarHeight = 50f
+    private val healthBarOffset = 30f
+
+    private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
+    private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
 
     private val logger = Logger("TESTING")
 
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var scoreText: BitmapFont
+    private lateinit var shapeRenderer: ShapeRenderer
 
     private lateinit var environment: Environment
     private lateinit var perspectiveCamera: PerspectiveCamera
@@ -75,10 +85,10 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         listener = MyContactListener()
 
         // Initialize AR Renderer
-        arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
+        arRenderer.initRendering(screenWidth.toInt(), screenHeight.toInt())
         arRenderer.addOnARRenderListener(arDetectListener)
 
-        perspectiveCamera = PerspectiveCamera(67f, Gdx.graphics.width.toFloat(), Gdx.graphics.height.toFloat())
+        perspectiveCamera = PerspectiveCamera(67f, screenWidth, screenHeight)
         perspectiveCamera.apply {
             position.set(0f, 0f, 0f)
             lookAt(0f, 0f, 1f)
@@ -105,11 +115,13 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
             }
         }
 
+        shapeRenderer = ShapeRenderer()
+
         spriteBatch = SpriteBatch()
         scoreText = BitmapFont()
         scoreText.color = Color.CORAL
         scoreText.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-        scoreText.data.scale(6f)
+        scoreText.data.scale(scoreTextScale)
 
         // Load assets
         GameAssets.loadAssets()
@@ -122,20 +134,39 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
         arRenderer.render()
-
+        renderHealthBar()
+        renderScore()
         //fireIfDetectsMonster()
 
         puppyController.render()
         monsterController.render()
 
-        spriteBatch.begin()
-        scoreText.draw(spriteBatch, "Score: $score", 100f, 100f)
-        spriteBatch.end()
     }
 
     override fun resize(width: Int, height: Int) {
         super.resize(width, height)
         arRenderer.resize(width, height)
+    }
+
+    private fun renderHealthBar() {
+        val posX = screenWidth - healthBarWidth - healthBarOffset
+        val posY = screenHeight - healthBarHeight - healthBarOffset
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
+        shapeRenderer.color = Color.GREEN
+        shapeRenderer.rect(posX, posY, healthBarWidth, healthBarHeight)
+        shapeRenderer.end()
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
+        shapeRenderer.color = Color.GREEN
+        shapeRenderer.rect(posX, posY, healthBarWidth - 40, healthBarHeight)
+        shapeRenderer.end()
+    }
+
+    private fun renderScore() {
+        spriteBatch.begin()
+        scoreText.draw(spriteBatch, "Score: $score", scoreTextOffset, screenHeight - scoreTextOffset)
+        spriteBatch.end()
     }
 
     private fun fireIfDetectsMonster() {
