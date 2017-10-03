@@ -3,11 +3,17 @@ package com.datpug
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.g2d.Animation
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
+import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
 import com.badlogic.gdx.math.Vector2
+import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
+import com.badlogic.gdx.utils.TimeUtils
 import com.datpug.entity.Direction
+import java.util.*
 
 /**
  * Created by longv on 27-Sep-17.
@@ -15,17 +21,29 @@ import com.datpug.entity.Direction
 
 object PlayerController : ApplicationListener {
 
-    private var logger = Logger(PlayerController::class.java.canonicalName)
+    private val logger = Logger(PlayerController::class.java.canonicalName)
 
+    private lateinit var explosionAnim: Animation<TextureRegion>
+    private val explosionSheetCols = 12
+    private val explosionSheetRows = 1
+    private val explosionSize = 380f
+    private var explosionPos: List<Vector2> = listOf()
+    private val explosionTime = 2.5f
+    private var shouldRenderExplosion = false
+    private val fps = 12f
+    private var timePassed = 0f
+    private var startTime = TimeUtils.millis()
+
+    private lateinit var spriteBatch: SpriteBatch
+    private lateinit var shapeRenderer: ShapeRenderer
+    private val random: Random = Random()
+
+    private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
+    private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
 
     var playerAnswers: List<Direction> = listOf()
         private set
     private var allowAnswer = false
-
-    private lateinit var shapeRenderer: ShapeRenderer
-
-    private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
-    private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
 
     private val totalHealth = 1000f
     private var playerHealth = 1000f
@@ -34,7 +52,17 @@ object PlayerController : ApplicationListener {
     private val healthBarOffset = 30f
 
     override fun create() {
+        spriteBatch = SpriteBatch()
         shapeRenderer = ShapeRenderer()
+
+        // Create explosion animation
+        val textureRegions = TextureRegion.split(
+            GameAssets.explosionTexture,
+            GameAssets.explosionTexture.width.div(explosionSheetCols),
+            GameAssets.explosionTexture.height.div(explosionSheetRows)
+        )
+        explosionAnim = Animation(1 / fps, Array(textureRegions.flatMap { it.toList() }.toTypedArray()))
+        explosionAnim.playMode = Animation.PlayMode.LOOP
 
         // Listen to answers' result
         GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
@@ -44,6 +72,14 @@ object PlayerController : ApplicationListener {
             }
 
             override fun onWrongAnswer() {
+                // Allow render explosion
+                shouldRenderExplosion = true
+                startTime = TimeUtils.millis()
+                explosionPos = List(5, {
+                    val posX = random.nextFloat() * screenWidth
+                    val poxY = random.nextFloat() * screenHeight
+                    Vector2(posX, poxY)
+                })
                 // Reset answers
                 playerAnswers = listOf()
                 // Health decrease
@@ -61,8 +97,14 @@ object PlayerController : ApplicationListener {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
 
         //when(GameManager.gameState) {
-           renderHealthBar()
-
+        renderHealthBar()
+        if (shouldRenderExplosion) {
+            renderExplosion()
+            val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
+            if (timePassed >= explosionTime) {
+                shouldRenderExplosion = false
+            }
+        }
         //}
     }
 
@@ -88,6 +130,14 @@ object PlayerController : ApplicationListener {
         shapeRenderer.color = Color.GREEN
         shapeRenderer.rect(posX, posY, currentHealthBarWidth, healthBarHeight)
         shapeRenderer.end()
+    }
+
+    private fun renderExplosion() {
+        timePassed += Gdx.graphics.deltaTime
+
+        spriteBatch.begin()
+        explosionPos.forEach { spriteBatch.draw(explosionAnim.getKeyFrame(timePassed), it.x, it.y, explosionSize, explosionSize) }
+        spriteBatch.end()
     }
 
     class GameGestureListener: GestureDetector.GestureListener {

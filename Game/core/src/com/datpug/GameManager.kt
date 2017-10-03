@@ -81,7 +81,7 @@ object GameManager: Disposable {
                         val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
                         if (timePassed >= stageTransitionTime) {
                             moveToNextStage()
-                            gameState = State.CHECKING
+                            gameState = State.CHALLENGING
                             startTime = TimeUtils.millis()
                         }
                     } else {
@@ -193,10 +193,7 @@ object GameManager: Disposable {
         val directions = currentChallenges[currentStage] as List<Direction>
         var result = true
 
-        directions.forEach {
-            if (!answers.contains(it))
-                result = false
-        }
+        directions.forEach { if (!answers.contains(it)) result = false }
         if (result) answerListeners.forEach { it.onCorrectAnswer() }
         else answerListeners.forEach { it.onWrongAnswer() }
     }

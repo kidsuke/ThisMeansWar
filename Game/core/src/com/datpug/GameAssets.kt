@@ -22,6 +22,8 @@ object GameAssets {
     val arrowDownTexture: Texture by lazy { getTexture(fileName = "sprite/arrowDown.png") }
     val arrowRightTexture: Texture by lazy { getTexture(fileName = "sprite/arrowRight.png") }
     val arrowLeftTexture: Texture by lazy { getTexture(fileName = "sprite/arrowLeft.png") }
+    val explosionTexture: Texture by lazy { getTexture(fileName = "sprite/explosion.png") }
+    val smokeTexture: Texture by lazy { getTexture(fileName = "sprite/smoke.png") }
     val dogRunningTextures: List<Texture> by lazy {
         val textures: MutableList<Texture> = mutableListOf()
         textures.add(getTexture(fileName = "sprite/dogRun_0.png"))
