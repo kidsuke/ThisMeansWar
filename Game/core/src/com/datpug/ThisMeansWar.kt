@@ -26,11 +26,6 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
     private val searchingTextScale = 5f
 
-
-    private val healthBarWidth = 500f
-    private val healthBarHeight = 50f
-    private val healthBarOffset = 30f
-
     private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
     private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
 
@@ -74,6 +69,7 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         }
 
         GameManager.init()
+        ChallengeController.create()
         PlayerController.create()
         MonsterController.create()
 
@@ -94,39 +90,21 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         arRenderer.render()
         GameManager.update()
+        ChallengeController.render()
         PlayerController.render()
         MonsterController.render()
 
         if (GameManager.isSearchingForMonster) {
             renderSearchingText()
         } else {
-            renderHealthBar()
             renderScoreText()
         }
-//
-//        if (GameManager.showChallenge) {
-//            renderChallenge()
-//        }
+
     }
 
     override fun resize(width: Int, height: Int) {
         super.resize(width, height)
         arRenderer.resize(width, height)
-    }
-
-    private fun renderHealthBar() {
-        val posX = screenWidth - healthBarWidth - healthBarOffset
-        val posY = screenHeight - healthBarHeight - healthBarOffset
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line)
-        shapeRenderer.color = Color.GREEN
-        shapeRenderer.rect(posX, posY, healthBarWidth, healthBarHeight)
-        shapeRenderer.end()
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled)
-        shapeRenderer.color = Color.GREEN
-        shapeRenderer.rect(posX, posY, healthBarWidth - 40, healthBarHeight)
-        shapeRenderer.end()
     }
 
     private fun renderScoreText() {

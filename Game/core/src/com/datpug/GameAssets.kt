@@ -22,6 +22,30 @@ object GameAssets {
     val arrowDownTexture: Texture by lazy { getTexture(fileName = "sprite/arrowDown.png") }
     val arrowRightTexture: Texture by lazy { getTexture(fileName = "sprite/arrowRight.png") }
     val arrowLeftTexture: Texture by lazy { getTexture(fileName = "sprite/arrowLeft.png") }
+    val dogRunningTextures: List<Texture> by lazy {
+        val textures: MutableList<Texture> = mutableListOf()
+        textures.add(getTexture(fileName = "sprite/dogRun_0.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_1.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_2.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_3.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_4.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_5.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_6.png"))
+        textures.add(getTexture(fileName = "sprite/dogRun_7.png"))
+        textures
+    }
+    val catRunningTextures: List<Texture> by lazy {
+        val textures: MutableList<Texture> = mutableListOf()
+        textures.add(getTexture(fileName = "sprite/catRun_0.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_1.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_2.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_3.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_4.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_5.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_6.png"))
+        textures.add(getTexture(fileName = "sprite/catRun_7.png"))
+        textures
+    }
 
     private val assetManager: AssetManager = AssetManager()
 
@@ -42,7 +66,7 @@ object GameAssets {
         try {
             model = assetManager.get(fileName, Model::class.java)
         } catch (e: Exception) {
-            throw IllegalStateException("Asset [$fileName] has not been loaded")
+            throw IllegalStateException("Model [$fileName] has not been loaded")
         }
         return model
     }
@@ -52,7 +76,7 @@ object GameAssets {
         try {
             texture = Texture(Gdx.files.internal(fileName))
         } catch (e: Exception) {
-            throw IllegalStateException("Asset [$fileName] cannot be found")
+            throw IllegalStateException("Texture [$fileName] cannot be found")
         }
         return texture
     }

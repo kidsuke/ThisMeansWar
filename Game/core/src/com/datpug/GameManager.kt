@@ -1,9 +1,6 @@
 package com.datpug
 
-import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.Texture
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.Disposable
 import com.badlogic.gdx.utils.TimeUtils
 import com.datpug.entity.Direction
@@ -14,6 +11,7 @@ import com.datpug.entity.Direction
 object GameManager: Disposable {
     enum class Level { LEVEL_1, LEVEL_2, LEVEL_3 }
     enum class Stage { STAGE_1, STAGE_2, STAGE_3 }
+    enum class State { IDLE, CHALLENGING, ANSWERING, CHECKING }
 
     var currentLevel: Level = Level.LEVEL_1
     var currentStage: Stage = Stage.STAGE_1
@@ -34,66 +32,60 @@ object GameManager: Disposable {
     var answerChallengeTime = 5f
     var stageTransitionTime = 5f
 
-    var step = 1
-
-    private lateinit var spriteBatch: SpriteBatch
-
+    val challenges: List<Direction>
+        get() = currentChallenges[currentStage] ?: listOf()
+    var gameState: State = State.IDLE
+        private set
+    var timePassedRelative: Float = 0f
 
     fun init() {
-        spriteBatch = SpriteBatch()
+
     }
 
     fun update() {
         if (challengeStarted) {
-            when (step) {
-                1 -> {
-                    // STEP 1
+            when (gameState) {
+                State.CHALLENGING -> {
+                    // STATE 1
                     // Show challenge to player for a certain time
-                    if (shouldResetTime) {
-                        startTime = TimeUtils.millis()
-                        shouldResetTime = false
-                    }
                     val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
-                    if (timePassed <= showChallengeTime) {
-                        renderChallenge()
-                    } else {
-                        shouldResetTime = true
-                        step = 2
+                    timePassedRelative = timePassed / showChallengeTime
+                    if (timePassed > showChallengeTime) {
+                        gameState = State.ANSWERING
+                        timePassedRelative = 0f
+                        startTime = TimeUtils.millis()
                     }
                 }
-                2 -> {
-                    // STEP 2
-                    // Hide challenge, give an amount of time for the player to answer
-                    if (shouldResetTime) {
-                        startTime = TimeUtils.millis()
-                        shouldResetTime = false
-                        PlayerController.startAnswer = true
-                    }
+                State.ANSWERING -> {
+                    // STATE 2
+                    // Give an amount of time for the player to answer
                     val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
+                    timePassedRelative = timePassed / answerChallengeTime
                     if (timePassed > answerChallengeTime) {
-                        PlayerController.startAnswer = false
-                        step = 3
+                        gameState = State.CHECKING
+                        timePassedRelative = 0f
+                        startTime = TimeUtils.millis()
                     }
                 }
-                3 -> {
+                State.CHECKING -> {
                     // STEP 3
                     // Check player's answers
                     checkAnswers(PlayerController.playerAnswers)
-                    shouldResetTime = true
-                    step = 4
+                    gameState = State.IDLE
+                    startTime = TimeUtils.millis()
                 }
-                4 -> {
+                State.IDLE -> {
                     // STEP 4
-                    // Start next stage in [stageTransitionTime] seconds
-                    if (shouldResetTime) {
-                        startTime = TimeUtils.millis()
-                        shouldResetTime = false
-                    }
-                    val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
-                    if (timePassed >= stageTransitionTime) {
-                        // If there is another stage, returns to step 1, else ends this challenge
-                        if (startNextStage()) step = 1
-                        else challengeStarted = false
+                    // Start next stage in [stageTransitionTime] seconds if possible
+                    if (hasNextStage()) {
+                        val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
+                        if (timePassed >= stageTransitionTime) {
+                            moveToNextStage()
+                            gameState = State.CHECKING
+                            startTime = TimeUtils.millis()
+                        }
+                    } else {
+                        challengeStarted = false
                     }
                 }
             }
@@ -102,49 +94,42 @@ object GameManager: Disposable {
 
     override fun dispose() { answerListeners = listOf() }
 
-    private fun startNextStage(): Boolean {
-        var result = true
+    private fun hasNextStage(): Boolean = currentStage != Stage.STAGE_3
 
+    private fun moveToNextStage() {
         currentStage = when (currentStage) {
             Stage.STAGE_1 -> Stage.STAGE_2
             Stage.STAGE_2 -> Stage.STAGE_3
-            else -> {
-                result = false
-                Stage.STAGE_1
-            }
+            Stage.STAGE_3 -> Stage.STAGE_1
         }
-
-        if (result) setupNextChallenges()
-
-        return result
+        setupChallenges()
     }
 
-    fun startCurrentLevel() {
-        setupNextChallenges()
-        challengeStarted = true
-    }
-
-    fun startNextLevel(): Boolean {
+    fun moveToNextLevel(): Boolean {
         var result = true
 
         currentLevel = when (currentLevel) {
             Level.LEVEL_1 -> Level.LEVEL_2
             Level.LEVEL_2 -> Level.LEVEL_3
-            else -> {
-                result = false
-                Level.LEVEL_1
-            }
+            Level.LEVEL_3 -> Level.LEVEL_1
         }
 
         if (result) {
-            setupNextChallenges()
+            setupChallenges()
             challengeStarted = true
         }
 
         return result
     }
 
-    private fun setupNextChallenges() {
+    fun startChallenges() {
+        setupChallenges()
+        gameState = State.CHALLENGING
+        challengeStarted = true
+        startTime = TimeUtils.millis()
+    }
+
+    private fun setupChallenges() {
         val challenges = mutableMapOf<Stage, List<Direction>>()
 
         when (currentLevel) {
@@ -204,29 +189,6 @@ object GameManager: Disposable {
         currentChallenges = challenges
     }
 
-    private fun renderChallenge() {
-        val challenges = currentChallenges[currentStage] as List<Direction>
-        var posX = 100f
-        var posY = 100f
-
-        spriteBatch.begin()
-        challenges.forEach {
-            val texture: Texture = when (it) {
-                Direction.UP -> { GameAssets.arrowUpTexture }
-                Direction.DOWN -> { GameAssets.arrowDownTexture }
-                Direction.RIGHT -> { GameAssets.arrowRightTexture }
-                Direction.LEFT -> { GameAssets.arrowLeftTexture }
-            }
-            spriteBatch.draw(texture, posX, posY, 150f, 150f)
-            posX += 250f
-        }
-        spriteBatch.end()
-    }
-
-    fun addOnAnswerListener(listener: OnAnswerListener) {
-        answerListeners = answerListeners.plus(listener)
-    }
-
     private fun checkAnswers(answers: List<Direction>) {
         val directions = currentChallenges[currentStage] as List<Direction>
         var result = true
@@ -239,6 +201,9 @@ object GameManager: Disposable {
         else answerListeners.forEach { it.onWrongAnswer() }
     }
 
+    fun addOnAnswerListener(listener: OnAnswerListener) {
+        answerListeners = answerListeners.plus(listener)
+    }
 
     interface OnAnswerListener {
         fun onCorrectAnswer()

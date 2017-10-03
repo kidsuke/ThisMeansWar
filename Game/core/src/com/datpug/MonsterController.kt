@@ -11,7 +11,6 @@ import com.badlogic.gdx.graphics.g3d.utils.AnimationController
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
-import com.datpug.entity.Puppy
 
 /**
  * Created by longv on 30-Sep-17.
@@ -26,9 +25,6 @@ object MonsterController: ApplicationListener {
     private var currentMonster: Monster? = null
     private var monsterAnimController: AnimationController? = null
 
-    private var animationControllers: List<AnimationController> = listOf()
-
-    var monsterDeadListener: OnMonsterDeadListener? = null
     var monsters: Map<Int, Monster> = mapOf()
         private set
 
@@ -63,7 +59,7 @@ object MonsterController: ApplicationListener {
                 // Animate appropriate animation
                 if (currentMonster!!.isDead) {
                     monsterAnimController?.queue("Armature|Idle", -1, 1f, null, 1f)
-                    GameManager.startNextLevel()
+                    GameManager.moveToNextLevel()
                 } else {
                     monsterAnimController?.queue("Armature|Idle", 3, 1f, null, 1f)
                     monsterAnimController?.queue("Armature|Walk", -1, 1f, null, 1f)
@@ -78,7 +74,7 @@ object MonsterController: ApplicationListener {
     }
 
     override fun render() {
-        monsterAnimController?.update(Gdx.graphics.deltaTime * 0.75f)
+        monsterAnimController?.update(Gdx.graphics.deltaTime)
 
         if (currentMonster != null) {
             modelBatch.begin(camera)
@@ -94,17 +90,10 @@ object MonsterController: ApplicationListener {
     override fun resize(width: Int, height: Int) {}
 
     override fun dispose() {
-        // Dispose all monsters if there is still any left
-        monsters.forEach {
-            // Remove the game object from the collision world
-            CollisionWorld.instance.removeCollisionObject(it.value.body)
-            // Dispose the game object
-            it.value.dispose()
-        }
         monsters = mapOf()
     }
 
-    fun generateMonster(data: FloatArray) {
+    fun generateMonster(modelViewProjection: FloatArray) {
         if (GameManager.isSearchingForMonster) {
             currentMonster = when (GameManager.currentLevel) {
                 GameManager.Level.LEVEL_1 -> {
@@ -118,9 +107,9 @@ object MonsterController: ApplicationListener {
                 }
             }
             currentMonster!!.transform.setToWorld(
-                    Vector3(data[12], data[13], data[14]),
-                    Vector3(data[8], data[9], data[10]),
-                    Vector3(data[4], data[5], data[6])
+                Vector3(modelViewProjection[12], modelViewProjection[13], modelViewProjection[14]),
+                Vector3(modelViewProjection[8], modelViewProjection[9], modelViewProjection[10]),
+                Vector3(modelViewProjection[4], modelViewProjection[5], modelViewProjection[6])
             )
             // Setup animation controller for monster. Pose is the starting anim
             monsterAnimController = AnimationController(currentMonster)
@@ -129,24 +118,21 @@ object MonsterController: ApplicationListener {
             GameManager.isSearchingForMonster = false
             // But first has a chat first lol
             monsterAnimController!!.animate("Armature|Walk", -1, null, 1f)
-            GameManager.startCurrentLevel()
+            GameManager.startChallenges()
         } else {
             currentMonster!!.transform.setToWorld(
-                Vector3(data[12], data[13], data[14]),
-                Vector3(data[8], data[9], data[10]),
-                Vector3(data[4], data[5], data[6])
+                Vector3(modelViewProjection[12], modelViewProjection[13], modelViewProjection[14]),
+                Vector3(modelViewProjection[8], modelViewProjection[9], modelViewProjection[10]),
+                Vector3(modelViewProjection[4], modelViewProjection[5], modelViewProjection[6])
             )
         }
     }
 
-    fun setCameraProjection(data: FloatArray) {
-        camera.position.set(data[12], data[13], data[14])
-        camera.up.set(data[4], data[5], data[6])
-        camera.direction.set(data[8], data[9], data[10])
+    fun setCameraProjection(cameraProjection: FloatArray) {
+        camera.position.set(cameraProjection[12], cameraProjection[13], cameraProjection[14])
+        camera.up.set(cameraProjection[4], cameraProjection[5], cameraProjection[6])
+        camera.direction.set(cameraProjection[8], cameraProjection[9], cameraProjection[10])
         camera.update()
     }
 
-    interface OnMonsterDeadListener {
-        fun onMonsterDead(monster: Pair<Int, Monster>)
-    }
 }
