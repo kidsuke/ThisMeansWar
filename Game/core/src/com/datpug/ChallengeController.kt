@@ -5,12 +5,11 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.*
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
-import com.badlogic.gdx.scenes.scene2d.ui.Button
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.utils.Array
-import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Direction
 
 /**
@@ -21,6 +20,7 @@ object ChallengeController: ApplicationListener {
 
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var shapeRenderer: ShapeRenderer
+    private lateinit var fontGenerator: FreeTypeFontGenerator
     private lateinit var searchingFont: BitmapFont
     private val searchingText = "Searching for monsters..."
     private var searchingFontHeight = 0f
@@ -44,33 +44,40 @@ object ChallengeController: ApplicationListener {
     override fun create() {
         spriteBatch = SpriteBatch()
         shapeRenderer = ShapeRenderer()
+        val glyphLayout = GlyphLayout()
+        fontGenerator = FreeTypeFontGenerator(Gdx.files.internal("fonts/KBLuckyClover.ttf"))
 
         // FONTS
-        val glyphLayout = GlyphLayout()
-
-        searchingFont = BitmapFont()
-        searchingFont.color = Color.CORAL
-        searchingFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-        searchingFont.data.scale(5f)
+        val searchingFontParam = FreeTypeFontGenerator.FreeTypeFontParameter()
+        searchingFontParam.color = Color.CORAL
+        searchingFontParam.size = 75
+        searchingFont = fontGenerator.generateFont(searchingFontParam)
         glyphLayout.setText(searchingFont, searchingText)
         searchingFontWidth = glyphLayout.width
         searchingFontHeight = glyphLayout.height
 
-        gameOverFont = BitmapFont()
-        gameOverFont.color = Color.WHITE
-        gameOverFont.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-        gameOverFont.data.scale(5f)
-        glyphLayout.setText(searchingFont, winOrLose)
+
+        val gameOverFontParam = FreeTypeFontGenerator.FreeTypeFontParameter()
+        gameOverFontParam.color = Color.CORAL
+        gameOverFontParam.size = 150
+        gameOverFont = fontGenerator.generateFont(gameOverFontParam)
+        glyphLayout.setText(gameOverFont, winOrLose)
         gameOverFontWidth = glyphLayout.width
         gameOverFontHeight = glyphLayout.height
 
+        val okButtonFontParam = FreeTypeFontGenerator.FreeTypeFontParameter()
+        okButtonFontParam.color = Color.WHITE
+        okButtonFontParam.size = 100
+        val okButtonFont = fontGenerator.generateFont(okButtonFontParam)
+
+        fontGenerator.dispose()
+
         // BUTTON
         val buttonStyle: TextButton.TextButtonStyle = TextButton.TextButtonStyle()
-        buttonStyle.font = searchingFont
+        buttonStyle.font = okButtonFont
         okButton = TextButton("OK", buttonStyle)
         okButton.x = Gdx.graphics.width.toFloat() / 2 - okButton.width / 2
-        okButton.y = Gdx.graphics.height.toFloat() / 2 - okButton.height / 2 - gameOverFontHeight
-        okButton.scaleBy(5f)
+        okButton.y = Gdx.graphics.height.toFloat() / 2 - okButton.height / 2 - gameOverFontHeight - 50f
         okButton.addListener {
             Gdx.app.exit()
             false
@@ -200,7 +207,7 @@ object ChallengeController: ApplicationListener {
 
     private fun renderGameOver() {
         spriteBatch.begin()
-        searchingFont.draw(spriteBatch, winOrLose, Gdx.graphics.width.toFloat()/2 - gameOverFontWidth / 2, Gdx.graphics.height.toFloat()/2 - gameOverFontHeight / 2)
+        gameOverFont.draw(spriteBatch, winOrLose, Gdx.graphics.width.toFloat()/2 - gameOverFontWidth / 2, Gdx.graphics.height.toFloat()/1.8f)
         okButton.draw(spriteBatch, 1f)
         spriteBatch.end()
     }
