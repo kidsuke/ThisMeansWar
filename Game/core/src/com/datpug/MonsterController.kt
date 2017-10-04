@@ -9,24 +9,20 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.utils.AnimationController
 import com.badlogic.gdx.math.Vector3
-import com.badlogic.gdx.utils.Logger
 import com.datpug.entity.Monster
 
 /**
  * Created by longv on 30-Sep-17.
  */
 object MonsterController: ApplicationListener {
-    private val logger = Logger("TESTING")
 
     private lateinit var modelBatch: ModelBatch
     private lateinit var camera: PerspectiveCamera
     private lateinit var environment: Environment
-
     private var currentMonster: Monster? = null
     private var monsterAnimController: AnimationController? = null
-
-    var monsters: Map<Int, Monster> = mapOf()
-        private set
+    val isMonsterDead: Boolean
+        get() = currentMonster?.isDead ?: true
 
     override fun create() {
         // Initialize batches
@@ -53,12 +49,20 @@ object MonsterController: ApplicationListener {
         GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
             override fun onCorrectAnswer() {
                 // Animate Hit animation
-                monsterAnimController?.animate("Armature|Hit", 2, null, 1f)
+                try {
+                    monsterAnimController?.animate("Armature|Hit", 2, null, 1f)
+                } catch (e: Exception) {
+                    monsterAnimController?.animate("Armature|hit", 2, null, 1f)
+                }
                 // Health decrease
                 currentMonster!!.takeDamage(100f)
                 // Animate appropriate animation
                 if (currentMonster!!.isDead) {
-                    monsterAnimController?.queue("Armature|Idle", -1, 1f, null, 1f)
+                    try {
+                        monsterAnimController?.queue("Armature|Die", 1, 1f, null, 1f)
+                    } catch (e: Exception) {
+                        monsterAnimController?.queue("Armature|die", 1, 1f, null, 1f)
+                    }
                     GameManager.moveToNextLevel()
                 } else {
                     monsterAnimController?.queue("Armature|Idle", 3, 1f, null, 1f)
@@ -74,12 +78,17 @@ object MonsterController: ApplicationListener {
     }
 
     override fun render() {
-        monsterAnimController?.update(Gdx.graphics.deltaTime)
+        when (GameManager.gameState) {
+            GameManager.State.SEARCHING -> {}
+            else -> {
+                monsterAnimController?.update(Gdx.graphics.deltaTime)
 
-        if (currentMonster != null) {
-            modelBatch.begin(camera)
-            modelBatch.render(currentMonster)
-            modelBatch.end()
+                if (currentMonster != null) {
+                    modelBatch.begin(camera)
+                    modelBatch.render(currentMonster)
+                    modelBatch.end()
+                }
+            }
         }
     }
 
@@ -90,14 +99,14 @@ object MonsterController: ApplicationListener {
     override fun resize(width: Int, height: Int) {}
 
     override fun dispose() {
-        monsters = mapOf()
+        modelBatch.dispose()
     }
 
     fun generateMonster(modelViewProjection: FloatArray) {
-        if (GameManager.isSearchingForMonster) {
+        if (GameManager.gameState == GameManager.State.SEARCHING) {
             currentMonster = when (GameManager.currentLevel) {
                 GameManager.Level.LEVEL_1 -> {
-                    Monster(GameAssets.archerModel)
+                    Monster(GameAssets.mageModel)
                 }
                 GameManager.Level.LEVEL_2 -> {
                     Monster(GameAssets.cerberusModel)
@@ -113,9 +122,7 @@ object MonsterController: ApplicationListener {
             )
             // Setup animation controller for monster. Pose is the starting anim
             monsterAnimController = AnimationController(currentMonster)
-            monsterAnimController!!.setAnimation("Armature|Pose", -1)
-            // Stop searching for monster and deal with this one...
-            GameManager.isSearchingForMonster = false
+            monsterAnimController!!.setAnimation("Armature|Idle", -1)
             // But first has a chat first lol
             monsterAnimController!!.animate("Armature|Walk", -1, null, 1f)
             GameManager.startChallenges()

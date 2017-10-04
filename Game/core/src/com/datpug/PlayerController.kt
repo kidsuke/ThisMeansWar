@@ -33,23 +33,22 @@ object PlayerController : ApplicationListener {
     private val fps = 12f
     private var timePassed = 0f
     private var startTime = TimeUtils.millis()
-
     private lateinit var spriteBatch: SpriteBatch
     private lateinit var shapeRenderer: ShapeRenderer
     private val random: Random = Random()
-
     private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
     private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
-
     var playerAnswers: List<Direction> = listOf()
         private set
-    private var allowAnswer = false
-
+    val isPlayerAlive: Boolean
+        get() = playerHealth > 0
     private val totalHealth = 1000f
     private var playerHealth = 1000f
     private val healthBarWidth = 500f
     private val healthBarHeight = 50f
     private val healthBarOffset = 30f
+
+    private var allowAnswer = false
 
     override fun create() {
         spriteBatch = SpriteBatch()
@@ -83,7 +82,7 @@ object PlayerController : ApplicationListener {
                 // Reset answers
                 playerAnswers = listOf()
                 // Health decrease
-                playerHealth -= 100
+                playerHealth -= GameManager.getDamage()
             }
         })
 
@@ -112,7 +111,14 @@ object PlayerController : ApplicationListener {
 
     override fun resume() {}
 
-    override fun dispose() {}
+    override fun dispose() {
+        spriteBatch.dispose()
+        shapeRenderer.dispose()
+    }
+
+    fun healthBonus(bonus: Float) {
+        playerHealth += bonus
+    }
 
     private fun renderHealthBar() {
         val posX = screenWidth - healthBarWidth - healthBarOffset

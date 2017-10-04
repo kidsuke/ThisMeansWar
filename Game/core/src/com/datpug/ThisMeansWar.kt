@@ -2,41 +2,9 @@ package com.datpug
 
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.graphics.*
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.g2d.BitmapFont
-import com.badlogic.gdx.graphics.g3d.*
-import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.physics.bullet.Bullet
-import com.badlogic.gdx.utils.Logger
-import com.datpug.entity.Monster
-import com.badlogic.gdx.graphics.PerspectiveCamera
-import com.badlogic.gdx.graphics.g3d.ModelBatch
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.utils.TimeUtils
-
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
-
-    private var score: Int = 0
-    private val scoreTextScale = 5f
-    private val scoreTextOffset = 15f
-
-    private val searchingTextScale = 5f
-
-    private val screenWidth by lazy { Gdx.graphics.width.toFloat() }
-    private val screenHeight by lazy { Gdx.graphics.height.toFloat() }
-
-    private lateinit var spriteBatch: SpriteBatch
-    private lateinit var scoreText: BitmapFont
-    private lateinit var shapeRenderer: ShapeRenderer
-
-    private lateinit var environment: Environment
-    private lateinit var perspectiveCamera: PerspectiveCamera
-    private lateinit var model: Model
-    private lateinit var modelBatch: ModelBatch
 
     private var arDetectListener: ARRenderer.OnARDetectListener = object : ARRenderer.OnARDetectListener {
         override fun onARDetected(id: Int, cameraProjection: FloatArray, modelViewProjection: FloatArray) {
@@ -46,40 +14,14 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
     }
 
     override fun create() {
-        // Initialize Bullet, this must be done before using any class of this lib
-        Bullet.init()
-
         // Initialize AR Renderer
-        arRenderer.initRendering(screenWidth.toInt(), screenHeight.toInt())
+        arRenderer.initRendering(Gdx.graphics.width, Gdx.graphics.height)
         arRenderer.addOnARRenderListener(arDetectListener)
 
-        perspectiveCamera = PerspectiveCamera(67f, screenWidth, screenHeight)
-        perspectiveCamera.apply {
-            position.set(0f, 0f, 0f)
-            lookAt(0f, 0f, 1f)
-            near = 1f
-            far = 5000f
-            update()
-        }
-
-        environment = Environment()
-        environment.apply {
-            set(ColorAttribute(ColorAttribute.AmbientLight, 0.4f, 0.4f, 0.4f, 1f))
-            add(DirectionalLight().set(0.8f, 0.8f, 0.8f, -1f, -0.8f, -0.2f))
-        }
-
-        GameManager.init()
+        // Initialize controllers
         ChallengeController.create()
         PlayerController.create()
         MonsterController.create()
-
-        shapeRenderer = ShapeRenderer()
-
-        spriteBatch = SpriteBatch()
-        scoreText = BitmapFont()
-        scoreText.color = Color.CORAL
-        scoreText.region.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear)
-        scoreText.data.scale(scoreTextScale)
 
         // Load assets
         GameAssets.loadAssets()
@@ -90,16 +32,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 
         arRenderer.render()
         GameManager.update()
-        ChallengeController.render()
         PlayerController.render()
         MonsterController.render()
-
-        if (GameManager.isSearchingForMonster) {
-            renderSearchingText()
-        } else {
-            renderScoreText()
-        }
-
+        ChallengeController.render()
     }
 
     override fun resize(width: Int, height: Int) {
@@ -107,22 +42,11 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         arRenderer.resize(width, height)
     }
 
-    private fun renderScoreText() {
-        spriteBatch.begin()
-        scoreText.draw(spriteBatch, "Score: $score", scoreTextOffset, screenHeight - scoreTextOffset)
-        spriteBatch.end()
-    }
-
-    private fun renderSearchingText() {
-        spriteBatch.begin()
-        scoreText.draw(spriteBatch, "Searching for monsters...", screenWidth/2, screenHeight/2)
-        spriteBatch.end()
-    }
-
     override fun dispose() {
-        modelBatch.dispose()
-        model.dispose()
-        spriteBatch.dispose()
+        PlayerController.dispose()
+        MonsterController.dispose()
+        ChallengeController.dispose()
+        GameAssets.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
     }
 }

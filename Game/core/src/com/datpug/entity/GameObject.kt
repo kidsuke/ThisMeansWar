@@ -12,15 +12,12 @@ import com.badlogic.gdx.utils.Disposable
 /**
  * Created by longv on 26-Sep-17.
  */
-open class GameObject(model: Model, x: Float, y: Float, z: Float): ModelInstance(model, x, y, z), Disposable {
+open class GameObject(model: Model, x: Float, y: Float, z: Float): ModelInstance(model, x, y, z) {
     var center: Vector3 = Vector3()
     var dimensions: Vector3 = Vector3()
     val radius: Float
         get() = dimensions.len() / 2
     val boundingBox = BoundingBox()
-    val body: btCollisionObject = btCollisionObject()
-    var isDisposed: Boolean = false
-        private set
 
     constructor(model: Model): this(model, 0f, 0f, 0f)
 
@@ -33,9 +30,4 @@ open class GameObject(model: Model, x: Float, y: Float, z: Float): ModelInstance
     }
 
     override final fun calculateBoundingBox(out: BoundingBox?): BoundingBox = super.calculateBoundingBox(out)
-
-    override fun dispose() {
-        body.dispose()
-        isDisposed = true
-    }
 }
