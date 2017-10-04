@@ -1,14 +1,14 @@
-package com.datpug
+package com.datpug.presentation
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.*
-import android.widget.Button
 
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
+import com.datpug.ThisMeansWar
 import com.datpug.ar.VuforiaSession
 import com.datpug.ar.VuforiaRenderer
 import com.vuforia.*
@@ -18,7 +18,7 @@ import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
 import io.reactivex.schedulers.Schedulers
 
-class AndroidLauncher : AndroidApplication() {
+class GameLauncher : AndroidApplication() {
     private lateinit var vuforiaSession: VuforiaSession
     private lateinit var theGame: ThisMeansWar
     private lateinit var gestureDetector: GestureDetector

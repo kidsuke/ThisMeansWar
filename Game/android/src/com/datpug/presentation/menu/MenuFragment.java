@@ -1,4 +1,4 @@
-package com.datpug;
+package com.datpug.presentation.menu;
 
 import android.support.v4.app.Fragment;
 
