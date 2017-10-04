@@ -70,7 +70,7 @@ object MonsterController: ApplicationListener {
             }
 
             override fun onWrongAnswer() {
-                monsterAnimController?.animate("Armature|Attack", 1, null, 1f)
+                monsterAnimController?.animate("Armature|Attack", 2, null, 1f)
                 monsterAnimController?.queue("Armature|Walk", -1, 1f, null, 1f)
             }
         })

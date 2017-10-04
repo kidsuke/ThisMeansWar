@@ -147,7 +147,10 @@ object GameManager {
                 // Stage 2
                 challenges.put(
                     Stage.STAGE_2,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(
+                        Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN,
+                        Direction.RIGHT, Direction.UP, Direction.DOWN, Direction.DOWN
+                    )
                 )
                 // Stage 3
                 challenges.put(
