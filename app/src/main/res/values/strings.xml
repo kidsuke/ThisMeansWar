@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">ThisMeansWar</string>
     <string name="menu_quit_button">Quit</string>
-    <string name="menu_find_game_button">Find game</string>
-    <string name="menu_host_game_button">Host game</string>
+    <string name="menu_play_button">Play</string>
 </resources>
