@@ -86,6 +86,7 @@ object GameManager {
                         }
                     } else {
                         if (hasNextLevel()) {
+                            // Start next stage in [levelTransitionTime] seconds
                             val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
                             if (timePassed >= levelTransitionTime) {
                                 // Searching for monster again...
@@ -118,7 +119,8 @@ object GameManager {
         setupChallenges()
     }
 
-    fun moveToNextLevel() {
+    private fun moveToNextLevel() {
+        currentStage = Stage.STAGE_1
         currentLevel = when (currentLevel) {
             Level.LEVEL_1 -> Level.LEVEL_2
             Level.LEVEL_2 -> Level.LEVEL_3

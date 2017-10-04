@@ -63,7 +63,6 @@ object MonsterController: ApplicationListener {
                     } catch (e: Exception) {
                         monsterAnimController?.queue("Armature|die", 1, 1f, null, 1f)
                     }
-                    GameManager.moveToNextLevel()
                 } else {
                     monsterAnimController?.queue("Armature|Idle", 3, 1f, null, 1f)
                     monsterAnimController?.queue("Armature|Walk", -1, 1f, null, 1f)

@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureRegion
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.input.GestureDetector
+import com.badlogic.gdx.math.MathUtils
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
@@ -82,7 +83,7 @@ object PlayerController : ApplicationListener {
                 // Reset answers
                 playerAnswers = listOf()
                 // Health decrease
-                playerHealth -= GameManager.getDamage()
+                playerHealth = MathUtils.clamp(playerHealth - GameManager.getDamage(), 0f, totalHealth)
             }
         })
 
@@ -95,7 +96,6 @@ object PlayerController : ApplicationListener {
     override fun render() {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
 
-        //when(GameManager.gameState) {
         renderHealthBar()
         if (shouldRenderExplosion) {
             renderExplosion()
@@ -104,7 +104,6 @@ object PlayerController : ApplicationListener {
                 shouldRenderExplosion = false
             }
         }
-        //}
     }
 
     override fun pause() {}
@@ -117,7 +116,7 @@ object PlayerController : ApplicationListener {
     }
 
     fun healthBonus(bonus: Float) {
-        playerHealth += bonus
+        playerHealth = MathUtils.clamp(playerHealth + bonus, 0f, totalHealth)
     }
 
     private fun renderHealthBar() {
