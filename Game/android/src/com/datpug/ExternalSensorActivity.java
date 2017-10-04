@@ -117,7 +117,7 @@ public class ExternalSensorActivity extends Activity implements ServiceConnectio
     public void onServiceConnected(ComponentName name, IBinder service) {
         BtleService.LocalBinder serviceBinder = (BtleService.LocalBinder) service;
 
-        String mwMacAddress= "CB:42:2B:56:0D:17";   ///< Put your board's MAC address here
+        String mwMacAddress= "C5:71:71:99:C4:D4";   ///< Put your board's MAC address here
         BluetoothManager btManager= (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
         BluetoothDevice btDevice= btManager.getAdapter().getRemoteDevice(mwMacAddress);
 
