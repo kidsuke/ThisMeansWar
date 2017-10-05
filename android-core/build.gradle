@@ -24,6 +24,12 @@ android {
     }
 }
 
+ext {
+    gradle_version = '2.3.3'
+    dagger_version = '2.11'
+    kotlin_version = '1.1.4-3'
+}
+
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
