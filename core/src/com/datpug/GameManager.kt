@@ -54,8 +54,8 @@ object GameManager {
                 // STATE 2
                 // Give an amount of time for the player to answer
                 val timePassed: Float = (TimeUtils.timeSinceMillis(startTime) + Gdx.graphics.deltaTime).div(1000)
-                timePassedRelative = timePassed / answerChallengeTime
-                if (timePassed > answerChallengeTime) {
+                timePassedRelative = timePassed / getAnswerTime()
+                if (timePassed > getAnswerTime()) {
                     gameState = State.CHECKING
                     timePassedRelative = 0f
                     startTime = TimeUtils.millis()
@@ -212,6 +212,12 @@ object GameManager {
         Level.LEVEL_1 ->  150f
         Level.LEVEL_2 -> 250f
         Level.LEVEL_3 -> 350f
+    }
+
+    fun getAnswerTime(): Float = when(currentLevel) {
+        Level.LEVEL_1 ->  5f
+        Level.LEVEL_2 -> 5.5f
+        Level.LEVEL_3 -> 6.5f
     }
 
     private fun checkAnswers(answers: List<Direction>) {
