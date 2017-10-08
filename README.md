@@ -8,13 +8,13 @@ Puppies vs monster is a single player memory game where cute puppies fight hideo
 
 ### TECHNOLOGY
 
-Internal sensor (Ambient light sensor)
+-Internal sensor (Ambient light sensor)
 
-External sensor (Metawear)
+-External sensor (Metawear)
 
-Bluetooth
+-Bluetooth
 
-AR (Vuforia)
+-AR (Vuforia)
 
 ### INSTALATION
 
