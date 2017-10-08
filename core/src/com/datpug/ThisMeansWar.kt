@@ -49,4 +49,8 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         GameAssets.dispose()
         arRenderer.removeOnARRenderListener(arDetectListener)
     }
+
+    fun setRemoteController(remoteController: RemoteController?) {
+        PlayerController.setRemoteController(remoteController)
+    }
 }

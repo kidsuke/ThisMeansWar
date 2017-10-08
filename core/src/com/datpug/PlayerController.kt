@@ -14,6 +14,10 @@ import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
 import com.badlogic.gdx.utils.TimeUtils
 import com.datpug.entity.Direction
+import io.reactivex.Observable
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
 import java.util.*
 
 /**
@@ -24,6 +28,8 @@ object PlayerController : ApplicationListener {
 
     private val logger = Logger(PlayerController::class.java.canonicalName)
 
+    private lateinit var disposables: CompositeDisposable
+    private var remoteController: RemoteController? = null
     private lateinit var explosionAnim: Animation<TextureRegion>
     private val explosionSheetCols = 12
     private val explosionSheetRows = 1
@@ -50,10 +56,12 @@ object PlayerController : ApplicationListener {
     private val healthBarOffset = 30f
 
     private var allowAnswer = false
+    var remoteControl = false
 
     override fun create() {
         spriteBatch = SpriteBatch()
         shapeRenderer = ShapeRenderer()
+        disposables = CompositeDisposable()
 
         // Create explosion animation
         val textureRegions = TextureRegion.split(
@@ -95,6 +103,9 @@ object PlayerController : ApplicationListener {
 
     override fun render() {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
+        if (allowAnswer) {
+            if (remoteControl) remoteController?.startRemoteControl()
+        }
 
         renderHealthBar()
         if (shouldRenderExplosion) {
@@ -113,6 +124,8 @@ object PlayerController : ApplicationListener {
     override fun dispose() {
         spriteBatch.dispose()
         shapeRenderer.dispose()
+        disposables.dispose()
+        remoteController?.stopRemoteControl()
     }
 
     fun healthBonus(bonus: Float) {
@@ -145,9 +158,22 @@ object PlayerController : ApplicationListener {
         spriteBatch.end()
     }
 
+    fun setRemoteController(remoteController: RemoteController?) {
+        if (remoteController != null) {
+            remoteControl = true
+            this.remoteController = remoteController
+
+            remoteController.getRemoteDirection()
+            .subscribeBy { if (allowAnswer && remoteControl) playerAnswers = playerAnswers.plus(it) }
+            .addTo(disposables)
+
+            remoteController.startRemoteControl()
+        }
+    }
+
     class GameGestureListener: GestureDetector.GestureListener {
         override fun fling(velocityX: Float, velocityY: Float, button: Int): Boolean {
-            if (allowAnswer) {
+            if (allowAnswer && !remoteControl) {
                 playerAnswers = if (Math.abs(velocityX) > Math.abs(velocityY)) {
                     if (velocityX > 0) {
                         logger.debug("RIGHT")
