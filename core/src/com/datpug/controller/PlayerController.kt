@@ -3,6 +3,7 @@ package com.datpug.controller
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.Animation
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureRegion
@@ -31,6 +32,7 @@ object PlayerController : ApplicationListener {
     private val logger = Logger(PlayerController::class.java.canonicalName)
 
     private lateinit var disposables: CompositeDisposable
+    private val disposableTextures: MutableList<Texture> = mutableListOf()
     private var remoteController: RemoteController? = null
     private lateinit var explosionAnim: Animation<TextureRegion>
     private val explosionSheetCols = 12
@@ -56,6 +58,11 @@ object PlayerController : ApplicationListener {
     private val healthBarWidth = 500f
     private val healthBarHeight = 50f
     private val healthBarOffset = 30f
+    private val answerSize = 150f
+    private val answerVelocity = 10f
+    private var currentAnswerPosX = screenWidth / 2 - answerSize / 2
+    private var currentAnswerPosY = screenHeight / 2 - answerSize / 2
+    private var currentAnswerAt = 0
 
     private var allowAnswer = false
     private var remoteControl = false
@@ -77,8 +84,11 @@ object PlayerController : ApplicationListener {
         // Listen to answers' result
         GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener {
             override fun onCorrectAnswer() {
-                // Reset answers
+                // Reset answers and related fields
                 playerAnswers = listOf()
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                currentAnswerAt = 0
             }
 
             override fun onWrongAnswer() {
@@ -90,8 +100,11 @@ object PlayerController : ApplicationListener {
                     val poxY = random.nextFloat() * screenHeight
                     Vector2(posX, poxY)
                 })
-                // Reset answers
+                // Reset answers and related fields
                 playerAnswers = listOf()
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                currentAnswerAt = 0
                 // Health decrease
                 playerHealth = MathUtils.clamp(playerHealth - GameManager.getDamage(), 0f, totalHealth)
             }
@@ -105,8 +118,9 @@ object PlayerController : ApplicationListener {
 
     override fun render() {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
-        if (allowAnswer) {
-            if (remoteControl) remoteController?.startRemoteControl()
+
+        if (allowAnswer && playerAnswers.isNotEmpty()) {
+            renderAnswers()
         }
 
         renderHealthBar()
@@ -131,6 +145,8 @@ object PlayerController : ApplicationListener {
         spriteBatch.dispose()
         shapeRenderer.dispose()
         disposables.dispose()
+        disposableTextures.forEach { it.dispose() }
+        disposableTextures.clear()
         if (remoteControl) remoteController?.stopRemoteControl()
     }
 
@@ -164,13 +180,52 @@ object PlayerController : ApplicationListener {
         spriteBatch.end()
     }
 
+    private fun renderAnswers() {
+        spriteBatch.begin()
+        val answer = playerAnswers[currentAnswerAt]
+        when (answer) {
+            Direction.UP -> {
+                val texture: Texture = GameAssets.arrowUpTexture
+                disposableTextures.add(texture)
+                currentAnswerPosY += answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.DOWN -> {
+                val texture: Texture = GameAssets.arrowDownTexture
+                disposableTextures.add(texture)
+                currentAnswerPosY -= answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.RIGHT -> {
+                val texture: Texture = GameAssets.arrowRightTexture
+                disposableTextures.add(texture)
+                currentAnswerPosX += answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.LEFT -> {
+                val texture: Texture = GameAssets.arrowLeftTexture
+                disposableTextures.add(texture)
+                currentAnswerPosX -= answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+        }
+        spriteBatch.end()
+    }
+
     fun setRemoteController(remoteController: RemoteController?) {
         if (remoteController != null) {
             remoteControl = true
             PlayerController.remoteController = remoteController
 
             remoteController.getRemoteDirection()
-            .subscribeBy { if (allowAnswer && remoteControl) playerAnswers = playerAnswers.plus(it) }
+            .subscribeBy {
+                if (allowAnswer && remoteControl) {
+                    playerAnswers = playerAnswers.plus(it)
+                    currentAnswerAt = playerAnswers.size - 1
+                    currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                    currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                }
+            }
             .addTo(disposables)
 
             remoteController.startRemoteControl()
@@ -199,6 +254,9 @@ object PlayerController : ApplicationListener {
                         playerAnswers.plus(Direction.UP)
                     }
                 }
+                currentAnswerAt = playerAnswers.size - 1
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
             }
 
             return true

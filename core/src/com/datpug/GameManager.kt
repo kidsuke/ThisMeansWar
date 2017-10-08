@@ -218,7 +218,8 @@ object GameManager {
         val directions = currentChallenges[currentStage] as List<Direction>
         var result = true
 
-        directions.forEach { if (!answers.contains(it)) result = false }
+        if (directions.size != answers.size) result = false
+        else directions.forEachIndexed { index, direction -> if (answers[index] != direction) result = false }
         if (result) answerListeners.forEach { it.onCorrectAnswer() }
         else answerListeners.forEach { it.onWrongAnswer() }
     }

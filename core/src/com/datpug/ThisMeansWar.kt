@@ -53,8 +53,8 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         arRenderer.render()
         if (isGameReady) {
             GameManager.update()
-            PlayerController.render()
             MonsterController.render()
+            PlayerController.render()
             ChallengeController.render()
         }
     }
