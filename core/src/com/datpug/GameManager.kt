@@ -1,8 +1,9 @@
 package com.datpug
 
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.utils.Disposable
 import com.badlogic.gdx.utils.TimeUtils
+import com.datpug.controller.MonsterController
+import com.datpug.controller.PlayerController
 import com.datpug.entity.Direction
 
 /**

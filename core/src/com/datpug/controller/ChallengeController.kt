@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
@@ -13,6 +13,9 @@ import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.Array
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
+import com.datpug.util.InputProcessor
 import com.datpug.entity.Direction
 
 /**
@@ -108,7 +111,7 @@ object ChallengeController: ApplicationListener {
 
         // Trail anim while puppies are running
         val textureRegions = TextureRegion.split(
-            GameAssets.smokeTexture,
+                GameAssets.smokeTexture,
             GameAssets.smokeTexture.width.div(trailSheetCols),
             GameAssets.smokeTexture.height.div(trailSheetRows)
         )
@@ -168,10 +171,18 @@ object ChallengeController: ApplicationListener {
         challenges.forEach {
             count++
             val texture: Texture = when (it) {
-                Direction.UP -> { GameAssets.arrowUpTexture }
-                Direction.DOWN -> { GameAssets.arrowDownTexture }
-                Direction.RIGHT -> { GameAssets.arrowRightTexture }
-                Direction.LEFT -> { GameAssets.arrowLeftTexture }
+                Direction.UP -> {
+                    GameAssets.arrowUpTexture
+                }
+                Direction.DOWN -> {
+                    GameAssets.arrowDownTexture
+                }
+                Direction.RIGHT -> {
+                    GameAssets.arrowRightTexture
+                }
+                Direction.LEFT -> {
+                    GameAssets.arrowLeftTexture
+                }
             }
             spriteBatch.draw(texture, posX, posY, size, size)
             posX += (size + 2 * offsetX)

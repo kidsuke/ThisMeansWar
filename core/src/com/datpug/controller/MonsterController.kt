@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
@@ -9,6 +9,8 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
 import com.badlogic.gdx.graphics.g3d.utils.AnimationController
 import com.badlogic.gdx.math.Vector3
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
 import com.datpug.entity.Monster
 
 /**
@@ -46,7 +48,7 @@ object MonsterController: ApplicationListener {
         }
 
         // Listen to answers' result
-        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
+        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener {
             override fun onCorrectAnswer() {
                 // Animate Hit animation
                 try {

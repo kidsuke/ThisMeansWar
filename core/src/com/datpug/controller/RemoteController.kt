@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.datpug.entity.Direction
 import io.reactivex.Observable

@@ -17,7 +17,7 @@ import android.widget.TextView
 import com.badlogic.gdx.backends.android.AndroidApplication
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 import com.datpug.R
-import com.datpug.RemoteController
+import com.datpug.controller.RemoteController
 import com.datpug.ThisMeansWar
 import com.datpug.ar.VuforiaSession
 import com.datpug.ar.VuforiaRenderer

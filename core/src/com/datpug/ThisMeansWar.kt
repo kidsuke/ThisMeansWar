@@ -3,6 +3,12 @@ package com.datpug
 import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
+import com.datpug.ar.ARRenderer
+import com.datpug.controller.ChallengeController
+import com.datpug.controller.MonsterController
+import com.datpug.controller.PlayerController
+import com.datpug.controller.RemoteController
+import com.datpug.util.GameAssets
 
 class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
 

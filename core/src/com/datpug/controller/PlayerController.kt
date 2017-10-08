@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
@@ -13,8 +13,10 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
 import com.badlogic.gdx.utils.TimeUtils
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
+import com.datpug.util.InputProcessor
 import com.datpug.entity.Direction
-import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import io.reactivex.rxkotlin.subscribeBy
@@ -65,7 +67,7 @@ object PlayerController : ApplicationListener {
 
         // Create explosion animation
         val textureRegions = TextureRegion.split(
-            GameAssets.explosionTexture,
+                GameAssets.explosionTexture,
             GameAssets.explosionTexture.width.div(explosionSheetCols),
             GameAssets.explosionTexture.height.div(explosionSheetRows)
         )
@@ -73,7 +75,7 @@ object PlayerController : ApplicationListener {
         explosionAnim.playMode = Animation.PlayMode.LOOP
 
         // Listen to answers' result
-        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
+        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener {
             override fun onCorrectAnswer() {
                 // Reset answers
                 playerAnswers = listOf()
@@ -165,7 +167,7 @@ object PlayerController : ApplicationListener {
     fun setRemoteController(remoteController: RemoteController?) {
         if (remoteController != null) {
             remoteControl = true
-            this.remoteController = remoteController
+            PlayerController.remoteController = remoteController
 
             remoteController.getRemoteDirection()
             .subscribeBy { if (allowAnswer && remoteControl) playerAnswers = playerAnswers.plus(it) }
