@@ -3,7 +3,6 @@ package com.datpug.ar
 import android.util.Log
 import android.opengl.GLES20
 import android.opengl.Matrix
-import com.datpug.ARRenderer
 import com.vuforia.*
 import com.vuforia.Matrix44F
 

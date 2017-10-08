@@ -1,8 +1,9 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.Animation
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g2d.TextureRegion
@@ -13,7 +14,13 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
 import com.badlogic.gdx.utils.TimeUtils
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
+import com.datpug.util.InputProcessor
 import com.datpug.entity.Direction
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
 import java.util.*
 
 /**
@@ -24,6 +31,9 @@ object PlayerController : ApplicationListener {
 
     private val logger = Logger(PlayerController::class.java.canonicalName)
 
+    private lateinit var disposables: CompositeDisposable
+    private val disposableTextures: MutableList<Texture> = mutableListOf()
+    private var remoteController: RemoteController? = null
     private lateinit var explosionAnim: Animation<TextureRegion>
     private val explosionSheetCols = 12
     private val explosionSheetRows = 1
@@ -48,16 +58,23 @@ object PlayerController : ApplicationListener {
     private val healthBarWidth = 500f
     private val healthBarHeight = 50f
     private val healthBarOffset = 30f
+    private val answerSize = 150f
+    private val answerVelocity = 10f
+    private var currentAnswerPosX = screenWidth / 2 - answerSize / 2
+    private var currentAnswerPosY = screenHeight / 2 - answerSize / 2
+    private var currentAnswerAt = 0
 
     private var allowAnswer = false
+    private var remoteControl = false
 
     override fun create() {
         spriteBatch = SpriteBatch()
         shapeRenderer = ShapeRenderer()
+        disposables = CompositeDisposable()
 
         // Create explosion animation
         val textureRegions = TextureRegion.split(
-            GameAssets.explosionTexture,
+                GameAssets.explosionTexture,
             GameAssets.explosionTexture.width.div(explosionSheetCols),
             GameAssets.explosionTexture.height.div(explosionSheetRows)
         )
@@ -65,10 +82,13 @@ object PlayerController : ApplicationListener {
         explosionAnim.playMode = Animation.PlayMode.LOOP
 
         // Listen to answers' result
-        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
+        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener {
             override fun onCorrectAnswer() {
-                // Reset answers
+                // Reset answers and related fields
                 playerAnswers = listOf()
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                currentAnswerAt = 0
             }
 
             override fun onWrongAnswer() {
@@ -80,21 +100,28 @@ object PlayerController : ApplicationListener {
                     val poxY = random.nextFloat() * screenHeight
                     Vector2(posX, poxY)
                 })
-                // Reset answers
+                // Reset answers and related fields
                 playerAnswers = listOf()
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                currentAnswerAt = 0
                 // Health decrease
                 playerHealth = MathUtils.clamp(playerHealth - GameManager.getDamage(), 0f, totalHealth)
             }
         })
 
         // Set listener for input processor
-        Gdx.input.inputProcessor = GestureDetector(GameGestureListener())
+        InputProcessor.addProccessor(GestureDetector(GameGestureListener()))
     }
 
     override fun resize(width: Int, height: Int) {}
 
     override fun render() {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
+
+        if (allowAnswer && playerAnswers.isNotEmpty()) {
+            renderAnswers()
+        }
 
         renderHealthBar()
         if (shouldRenderExplosion) {
@@ -106,13 +133,21 @@ object PlayerController : ApplicationListener {
         }
     }
 
-    override fun pause() {}
+    override fun pause() {
+        if (remoteControl) remoteController?.stopRemoteControl()
+    }
 
-    override fun resume() {}
+    override fun resume() {
+        if (remoteControl) remoteController?.startRemoteControl()
+    }
 
     override fun dispose() {
         spriteBatch.dispose()
         shapeRenderer.dispose()
+        disposables.dispose()
+        disposableTextures.forEach { it.dispose() }
+        disposableTextures.clear()
+        if (remoteControl) remoteController?.stopRemoteControl()
     }
 
     fun healthBonus(bonus: Float) {
@@ -145,9 +180,61 @@ object PlayerController : ApplicationListener {
         spriteBatch.end()
     }
 
+    private fun renderAnswers() {
+        spriteBatch.begin()
+        val answer = playerAnswers[currentAnswerAt]
+        when (answer) {
+            Direction.UP -> {
+                val texture: Texture = GameAssets.arrowUpTexture
+                disposableTextures.add(texture)
+                currentAnswerPosY += answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.DOWN -> {
+                val texture: Texture = GameAssets.arrowDownTexture
+                disposableTextures.add(texture)
+                currentAnswerPosY -= answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.RIGHT -> {
+                val texture: Texture = GameAssets.arrowRightTexture
+                disposableTextures.add(texture)
+                currentAnswerPosX += answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+            Direction.LEFT -> {
+                val texture: Texture = GameAssets.arrowLeftTexture
+                disposableTextures.add(texture)
+                currentAnswerPosX -= answerVelocity
+                spriteBatch.draw(texture, currentAnswerPosX, currentAnswerPosY, answerSize, answerSize)
+            }
+        }
+        spriteBatch.end()
+    }
+
+    fun setRemoteController(remoteController: RemoteController?) {
+        if (remoteController != null) {
+            remoteControl = true
+            PlayerController.remoteController = remoteController
+
+            remoteController.getRemoteDirection()
+            .subscribeBy {
+                if (allowAnswer && remoteControl) {
+                    playerAnswers = playerAnswers.plus(it)
+                    currentAnswerAt = playerAnswers.size - 1
+                    currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                    currentAnswerPosY = screenHeight / 2 - answerSize / 2
+                }
+            }
+            .addTo(disposables)
+
+            remoteController.startRemoteControl()
+        }
+    }
+
     class GameGestureListener: GestureDetector.GestureListener {
         override fun fling(velocityX: Float, velocityY: Float, button: Int): Boolean {
-            if (allowAnswer) {
+            if (allowAnswer && !remoteControl) {
                 playerAnswers = if (Math.abs(velocityX) > Math.abs(velocityY)) {
                     if (velocityX > 0) {
                         logger.debug("RIGHT")
@@ -167,6 +254,9 @@ object PlayerController : ApplicationListener {
                         playerAnswers.plus(Direction.UP)
                     }
                 }
+                currentAnswerAt = playerAnswers.size - 1
+                currentAnswerPosX = screenWidth / 2 - answerSize / 2
+                currentAnswerPosY = screenHeight / 2 - answerSize / 2
             }
 
             return true

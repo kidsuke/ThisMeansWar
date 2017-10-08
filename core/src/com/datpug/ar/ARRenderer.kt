@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.ar
 
 /**
  * Created by longvu on 22/09/2017.

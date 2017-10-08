@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
@@ -8,8 +8,14 @@ import com.badlogic.gdx.graphics.g2d.*
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.Array
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
+import com.datpug.util.InputProcessor
 import com.datpug.entity.Direction
 
 /**
@@ -78,10 +84,14 @@ object ChallengeController: ApplicationListener {
         okButton = TextButton("OK", buttonStyle)
         okButton.x = Gdx.graphics.width.toFloat() / 2 - okButton.width / 2
         okButton.y = Gdx.graphics.height.toFloat() / 2 - okButton.height / 2 - gameOverFontHeight - 50f
-        okButton.addListener {
-            Gdx.app.exit()
-            false
-        }
+        okButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                Gdx.app.exit()
+            }
+        })
+        val stage = Stage()
+        stage.addActor(okButton)
+        InputProcessor.addProccessor(stage)
 
         // ANIMATIONS
         // A dog running anim represent s time for challenge
@@ -101,7 +111,7 @@ object ChallengeController: ApplicationListener {
 
         // Trail anim while puppies are running
         val textureRegions = TextureRegion.split(
-            GameAssets.smokeTexture,
+                GameAssets.smokeTexture,
             GameAssets.smokeTexture.width.div(trailSheetCols),
             GameAssets.smokeTexture.height.div(trailSheetRows)
         )
@@ -161,10 +171,18 @@ object ChallengeController: ApplicationListener {
         challenges.forEach {
             count++
             val texture: Texture = when (it) {
-                Direction.UP -> { GameAssets.arrowUpTexture }
-                Direction.DOWN -> { GameAssets.arrowDownTexture }
-                Direction.RIGHT -> { GameAssets.arrowRightTexture }
-                Direction.LEFT -> { GameAssets.arrowLeftTexture }
+                Direction.UP -> {
+                    GameAssets.arrowUpTexture
+                }
+                Direction.DOWN -> {
+                    GameAssets.arrowDownTexture
+                }
+                Direction.RIGHT -> {
+                    GameAssets.arrowRightTexture
+                }
+                Direction.LEFT -> {
+                    GameAssets.arrowLeftTexture
+                }
             }
             spriteBatch.draw(texture, posX, posY, size, size)
             posX += (size + 2 * offsetX)
