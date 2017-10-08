@@ -149,48 +149,52 @@ object GameManager {
                 challenges.put(
                     Stage.STAGE_2,
                     listOf(
-                        Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN,
-                        Direction.RIGHT, Direction.UP, Direction.DOWN, Direction.DOWN
-                    )
+                        Direction.DOWN, Direction.DOWN, Direction.UP, Direction.UP,
+                        Direction.RIGHT, Direction.LEFT)
                 )
                 // Stage 3
                 challenges.put(
                     Stage.STAGE_3,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.RIGHT, Direction.LEFT, Direction.LEFT, Direction.LEFT,
+                           Direction.UP, Direction.UP, Direction.DOWN, Direction.DOWN)
                 )
             }
             Level.LEVEL_2 -> {
                 // Stage 1
                 challenges.put(
                     Stage.STAGE_1,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.LEFT, Direction.RIGHT, Direction.UP, Direction.RIGHT)
                 )
                 // Stage 2
                 challenges.put(
                     Stage.STAGE_2,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.LEFT, Direction.LEFT, Direction.DOWN,
+                            Direction.RIGHT, Direction.DOWN, Direction.RIGHT)
                 )
                 // Stage 3
                 challenges.put(
                     Stage.STAGE_3,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.DOWN, Direction.LEFT, Direction.UP, Direction.RIGHT,
+                           Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT)
                 )
             }
             Level.LEVEL_3 -> {
                 // Stage 1
                 challenges.put(
                     Stage.STAGE_1,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.RIGHT, Direction.DOWN, Direction.RIGHT, Direction.LEFT)
                 )
                 // Stage 2
                 challenges.put(
                     Stage.STAGE_2,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.UP, Direction.LEFT, Direction.RIGHT,
+                           Direction.DOWN, Direction.RIGHT, Direction.LEFT)
                 )
                 // Stage 3
                 challenges.put(
                     Stage.STAGE_3,
-                    listOf(Direction.LEFT, Direction.DOWN, Direction.LEFT, Direction.DOWN)
+                    listOf(Direction.DOWN, Direction.DOWN, Direction.UP, Direction.RIGHT,
+                           Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT)
                 )
             }
         }
@@ -205,9 +209,9 @@ object GameManager {
     }
 
     fun getDamage(): Float = when(currentLevel) {
-        Level.LEVEL_1 ->  100f
-        Level.LEVEL_2 -> 200f
-        Level.LEVEL_3 -> 300f
+        Level.LEVEL_1 ->  150f
+        Level.LEVEL_2 -> 250f
+        Level.LEVEL_3 -> 350f
     }
 
     private fun checkAnswers(answers: List<Direction>) {

@@ -63,7 +63,7 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
         // Get settings info from pref
         val sharePref = getSharedPreferences(applicationContext.packageName, Context.MODE_PRIVATE)
         macAddress = sharePref.getString("macAddress", "C5:71:71:99:C4:D4")
-        enableRemoteControl = sharePref.getBoolean("remoteControl", true)
+        enableRemoteControl = sharePref.getBoolean("remoteControl", false)
 
         vuforiaSession = VuforiaSession(this, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
         gestureDetector = GestureDetector(this, GestureListener())
