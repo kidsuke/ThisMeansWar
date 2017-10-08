@@ -133,8 +133,6 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
         super.onDestroy()
         // Stop bluetooth service
         applicationContext.unbindService(this)
-        // Stop remote control
-        stopRemoteControl()
         // Stop Vuforia
         vuforiaSession.stopVuforia()
             // Need to be done in another thread since it's a blocking call

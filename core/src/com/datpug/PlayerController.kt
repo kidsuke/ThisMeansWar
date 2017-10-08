@@ -56,7 +56,7 @@ object PlayerController : ApplicationListener {
     private val healthBarOffset = 30f
 
     private var allowAnswer = false
-    var remoteControl = false
+    private var remoteControl = false
 
     override fun create() {
         spriteBatch = SpriteBatch()
@@ -117,9 +117,13 @@ object PlayerController : ApplicationListener {
         }
     }
 
-    override fun pause() {}
+    override fun pause() {
+        if (remoteControl) remoteController?.stopRemoteControl()
+    }
 
-    override fun resume() {}
+    override fun resume() {
+        if (remoteControl) remoteController?.startRemoteControl()
+    }
 
     override fun dispose() {
         spriteBatch.dispose()

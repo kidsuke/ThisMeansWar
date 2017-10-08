@@ -27,6 +27,16 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         GameAssets.loadAssets()
     }
 
+    override fun pause() {
+        super.pause()
+        PlayerController.pause()
+    }
+
+    override fun resume() {
+        super.resume()
+        PlayerController.resume()
+    }
+
     override fun render() {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT or GL20.GL_DEPTH_BUFFER_BIT)
 
