@@ -84,6 +84,7 @@ object ChallengeController: ApplicationListener {
         okButton = TextButton("OK", buttonStyle)
         okButton.x = Gdx.graphics.width.toFloat() / 2 - okButton.width / 2
         okButton.y = Gdx.graphics.height.toFloat() / 2 - okButton.height / 2 - gameOverFontHeight - 50f
+        okButton.isVisible = false
         okButton.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 Gdx.app.exit()
@@ -133,10 +134,12 @@ object ChallengeController: ApplicationListener {
             }
             GameManager.State.WIN -> {
                 winOrLose = "You Win"
+                okButton.isVisible = true
                 renderGameOver()
             }
             GameManager.State.LOSE -> {
                 winOrLose = "You Lose"
+                okButton.isVisible = true
                 renderGameOver()
             }
             else -> {}
