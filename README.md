@@ -27,5 +27,3 @@ Clone this github repository and run on your android device
 -Enter metawear's mac address
 
 <img src="/readme_img/connect_es.jpg" width="300px"/>
-
-
