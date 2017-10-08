@@ -23,10 +23,12 @@ public class HowToPlayFragment extends Fragment {
         TextView step1 = view.findViewById(R.id.htp_step1);
         TextView step2 = view.findViewById(R.id.htp_step2);
         TextView step3 = view.findViewById(R.id.htp_step3);
+        TextView note = view.findViewById(R.id.note);
         Typeface htpTypeface = Typeface.createFromAsset(getContext().getAssets(), "fonts/AmaticSC-Bold.ttf");
         step1.setTypeface(htpTypeface);
         step2.setTypeface(htpTypeface);
         step3.setTypeface(htpTypeface);
+        note.setTypeface(htpTypeface);
 
         return view;
     }

@@ -17,18 +17,19 @@
     <string name="quit">Quit</string>
     <string name="action_settings">Settings</string>
     <string name="noti_title">Miss you already</string>
-    <string name="noti_text">Comback and fight those hideous monster!!!</string>
+    <string name="noti_text">Comeback and fight those hideous monster!!!</string>
     <string name="how_to_play">How to play</string>
-    <string name="step_1">Step 1: Place your camera in front of the target image to search for the monster</string>
-    <string name="step_2">Step 2: Try to remember the arrow sequence on the screen within the given time</string>
-    <string name="step_3">Step 3: Move the metawear in the exact directions within the given time to hit the monster. The monster will be defeated if you remember 3 sequences correctly</string>
+    <string name="step_1"><u><b>Step 1:</b></u> Place your camera in front of the target image to search for monsters.</string>
+    <string name="step_2"><u><b>Step 2:</b></u> Try to remember the arrow sequence on the screen within the given time.</string>
+    <string name="step_3"><u><b>Step 3:</b></u> Move the MetaWear or swipe the screen in the exact directions within the given time to defeat monsters.</string>
+    <string name="note"><u><b>Note:</b></u> You can gain bonus health if a monster is defeated with 3 correct sequences. You will win if all monsters are defeated and you are still alive LOL…</string>
     <string name="setting_instruction">Enter your Metawear\'s MAC address</string>
     <string name="split">:</string>
     <string name="enable_remote_control">Enable remote control</string>
     <string name="setting_save_button">Save</string>
     <string name="setting_saved">Settings saved</string>
-    <string name="initialize_remote_control">Initialize remote control...</string>
-    <string name="initialize_light_sensor">Initialize light sensor...</string>
+    <string name="initialize_remote_control">Initialize remote control…</string>
+    <string name="initialize_light_sensor">Initialize light sensor…</string>
     <string name="toggle_light_sensor">Toggle light sensor</string>
 
 </resources>
