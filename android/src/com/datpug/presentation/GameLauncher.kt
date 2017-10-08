@@ -1,15 +1,21 @@
 package com.datpug.presentation
 
+import android.Manifest
 import android.bluetooth.BluetoothManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.ActivityInfo
-import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
+import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.net.Uri
+import android.os.*
+import android.provider.Settings
+import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.*
 import android.widget.TextView
@@ -36,7 +42,7 @@ import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
-class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
+class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController, SensorEventListener {
 
     private lateinit var loadingView: View
     private lateinit var progressText: TextView
@@ -44,6 +50,8 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
     private lateinit var vuforiaSession: VuforiaSession
     private lateinit var theGame: ThisMeansWar
     private lateinit var gestureDetector: GestureDetector
+    private var sensorManager: SensorManager? = null
+    private var environmentSensor: Sensor? = null
     private var mwBoard: MetaWearBoard? = null
     private var accelerometer: Accelerometer? = null
     private val accelerationSubject = PublishSubject.create<Acceleration>()
@@ -52,6 +60,7 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
     private var enableRemoteControl = false
     private val operations: MutableList<Pair<String, () -> Unit>> = mutableListOf()
     private var operationAt = 0
+    private var btServiceStarted = false;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,7 +145,9 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
     override fun onDestroy() {
         super.onDestroy()
         // Stop bluetooth service
-        applicationContext.unbindService(this)
+        if (btServiceStarted) applicationContext.unbindService(this)
+        // Stop internal sensor
+        sensorManager?.unregisterListener(this, environmentSensor)
         // Stop Vuforia
         vuforiaSession.stopVuforia()
             // Need to be done in another thread since it's a blocking call
@@ -169,9 +180,28 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
     }
 
     private fun createOperations() {
+        // Initialize operation for remote control
         if (enableRemoteControl) {
-            operations.add(Pair("Initialize remote control...") {
+            operations.add(Pair(getString(R.string.initialize_remote_control)) {
                 applicationContext.bindService(Intent(this, BtleService::class.java), this, Context.BIND_AUTO_CREATE)
+                btServiceStarted = true
+                return@Pair
+            })
+        }
+
+        // Initialize operation for light sensor
+        val permission: Boolean;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            permission = Settings.System.canWrite(context);
+        } else {
+            permission = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SETTINGS) == PackageManager.PERMISSION_GRANTED;
+        }
+        if (permission) {
+            operations.add(Pair(getString(R.string.initialize_light_sensor)) {
+                sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+                environmentSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_LIGHT)
+                sensorManager!!.registerListener(this, environmentSensor, SensorManager.SENSOR_DELAY_NORMAL)
+                publishOperation(++operationAt)
                 return@Pair
             })
         }
@@ -253,6 +283,28 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
                 }
             }
         }
+    }
+
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
+
+    override fun onSensorChanged(sensorEvent: SensorEvent) {
+        val sensorValue = sensorEvent.values[0]
+        try {
+            if (sensorValue <= 50) {
+                Settings.System.putInt(this.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 255)
+            } else if (sensorValue <= 200) {
+                Settings.System.putInt(this.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 150)
+            } else if (sensorValue <= 500) {
+                Settings.System.putInt(this.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 100)
+            } else {
+                Settings.System.putInt(this.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 50)
+            }
+
+            val brightness = Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+            val layoutParams = window.attributes
+            layoutParams.screenBrightness = brightness.toFloat() / 255
+            window.attributes = layoutParams
+        } catch (e: Exception) { }
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean = gestureDetector.onTouchEvent(event)
