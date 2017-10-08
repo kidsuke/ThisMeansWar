@@ -27,5 +27,8 @@
     <string name="enable_remote_control">Enable remote control</string>
     <string name="setting_save_button">Save</string>
     <string name="setting_saved">Settings saved</string>
+    <string name="initialize_remote_control">Initialize remote control...</string>
+    <string name="initialize_light_sensor">Initialize light sensor...</string>
+    <string name="toggle_light_sensor">Toggle light sensor</string>
 
 </resources>

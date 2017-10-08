@@ -1,10 +1,16 @@
 package com.datpug.presentation.menu;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -34,6 +40,7 @@ public class SettingFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_setting, container, false);
 
         // SETUP VIEWS
+        TextView sensorToggle = view.findViewById(R.id.sensor_toggle);
         final TextView instruction = view.findViewById(R.id.instruction);
         final LinearLayout macAddInput = view.findViewById(R.id.macAddInput);
         final CheckBox checkBox = view.findViewById(R.id.checkbox);
@@ -55,8 +62,22 @@ public class SettingFragment extends Fragment {
         Typeface inputTypeface = Typeface.createFromAsset(getContext().getAssets(), "fonts/AmaticSC-Bold.ttf");
         instruction.setTypeface(inputTypeface);
         checkBox.setTypeface(inputTypeface);
+        sensorToggle.setTypeface(inputTypeface);
         Typeface buttonTypeface = Typeface.createFromAsset(getContext().getAssets(), "fonts/KBLuckyClover.ttf");
         saveBtn.setTypeface(buttonTypeface);
+
+        sensorToggle.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+                    intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+                    startActivity(intent);
+                } else {
+                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.WRITE_SETTINGS}, 1);
+                }
+            }
+        });
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
