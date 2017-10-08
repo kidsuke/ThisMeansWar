@@ -3,7 +3,7 @@
 
     <string name="app_name_start">Puppies</string>
     <string name="app_name_mid">vs</string>
-    <string name="app_name_end">Monster</string>
+    <string name="app_name_end">Monsters</string>
     <string name="INIT_ERROR_DEVICE_NOT_SUPPORTED">Device is not supported</string>
     <string name="INIT_ERROR_NO_CAMERA_ACCESS">No camera access</string>
     <string name="INIT_LICENSE_ERROR_MISSING_KEY">Missing license key</string>
