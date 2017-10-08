@@ -1,4 +1,4 @@
-package com.datpug
+package com.datpug.controller
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
@@ -13,7 +13,13 @@ import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Array
 import com.badlogic.gdx.utils.Logger
 import com.badlogic.gdx.utils.TimeUtils
+import com.datpug.util.GameAssets
+import com.datpug.GameManager
+import com.datpug.util.InputProcessor
 import com.datpug.entity.Direction
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import io.reactivex.rxkotlin.subscribeBy
 import java.util.*
 
 /**
@@ -24,6 +30,8 @@ object PlayerController : ApplicationListener {
 
     private val logger = Logger(PlayerController::class.java.canonicalName)
 
+    private lateinit var disposables: CompositeDisposable
+    private var remoteController: RemoteController? = null
     private lateinit var explosionAnim: Animation<TextureRegion>
     private val explosionSheetCols = 12
     private val explosionSheetRows = 1
@@ -50,14 +58,16 @@ object PlayerController : ApplicationListener {
     private val healthBarOffset = 30f
 
     private var allowAnswer = false
+    private var remoteControl = false
 
     override fun create() {
         spriteBatch = SpriteBatch()
         shapeRenderer = ShapeRenderer()
+        disposables = CompositeDisposable()
 
         // Create explosion animation
         val textureRegions = TextureRegion.split(
-            GameAssets.explosionTexture,
+                GameAssets.explosionTexture,
             GameAssets.explosionTexture.width.div(explosionSheetCols),
             GameAssets.explosionTexture.height.div(explosionSheetRows)
         )
@@ -65,7 +75,7 @@ object PlayerController : ApplicationListener {
         explosionAnim.playMode = Animation.PlayMode.LOOP
 
         // Listen to answers' result
-        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener{
+        GameManager.addOnAnswerListener(object : GameManager.OnAnswerListener {
             override fun onCorrectAnswer() {
                 // Reset answers
                 playerAnswers = listOf()
@@ -88,13 +98,16 @@ object PlayerController : ApplicationListener {
         })
 
         // Set listener for input processor
-        Gdx.input.inputProcessor = GestureDetector(GameGestureListener())
+        InputProcessor.addProccessor(GestureDetector(GameGestureListener()))
     }
 
     override fun resize(width: Int, height: Int) {}
 
     override fun render() {
         allowAnswer = GameManager.gameState == GameManager.State.ANSWERING
+        if (allowAnswer) {
+            if (remoteControl) remoteController?.startRemoteControl()
+        }
 
         renderHealthBar()
         if (shouldRenderExplosion) {
@@ -106,13 +119,19 @@ object PlayerController : ApplicationListener {
         }
     }
 
-    override fun pause() {}
+    override fun pause() {
+        if (remoteControl) remoteController?.stopRemoteControl()
+    }
 
-    override fun resume() {}
+    override fun resume() {
+        if (remoteControl) remoteController?.startRemoteControl()
+    }
 
     override fun dispose() {
         spriteBatch.dispose()
         shapeRenderer.dispose()
+        disposables.dispose()
+        if (remoteControl) remoteController?.stopRemoteControl()
     }
 
     fun healthBonus(bonus: Float) {
@@ -145,9 +164,22 @@ object PlayerController : ApplicationListener {
         spriteBatch.end()
     }
 
+    fun setRemoteController(remoteController: RemoteController?) {
+        if (remoteController != null) {
+            remoteControl = true
+            PlayerController.remoteController = remoteController
+
+            remoteController.getRemoteDirection()
+            .subscribeBy { if (allowAnswer && remoteControl) playerAnswers = playerAnswers.plus(it) }
+            .addTo(disposables)
+
+            remoteController.startRemoteControl()
+        }
+    }
+
     class GameGestureListener: GestureDetector.GestureListener {
         override fun fling(velocityX: Float, velocityY: Float, button: Int): Boolean {
-            if (allowAnswer) {
+            if (allowAnswer && !remoteControl) {
                 playerAnswers = if (Math.abs(velocityX) > Math.abs(velocityY)) {
                     if (velocityX > 0) {
                         logger.debug("RIGHT")
