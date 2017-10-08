@@ -233,7 +233,7 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
     override fun getRemoteDirection(): Observable<Direction> {
         return accelerationSubject
         .filter({ acceleration -> Math.abs(acceleration.z()) >= 1f || acceleration.y() <= -2f || acceleration.y() >= 0f })
-        .throttleFirst(460, TimeUnit.MILLISECONDS)
+        .throttleFirst(480, TimeUnit.MILLISECONDS)
         .map {
             if (Math.abs(it.z()) > Math.abs(it.y() + 1)) {
                 if (it.z() >= 1f) {
