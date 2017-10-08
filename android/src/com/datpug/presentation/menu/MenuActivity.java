@@ -36,7 +36,6 @@ public class MenuActivity extends AppCompatActivity {
             mediaPlayer.setDataSource(assetFileDescriptor.getFileDescriptor(), assetFileDescriptor.getStartOffset(), assetFileDescriptor.getLength());
             mediaPlayer.setLooping(true);
             mediaPlayer.prepare();
-            mediaPlayer.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,13 +57,14 @@ public class MenuActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        mediaPlayer.stop();
+        mediaPlayer.pause();
         NotificationController.setReminder(this.getApplicationContext());
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mediaPlayer.stop();
         mediaPlayer = null;
     }
 

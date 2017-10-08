@@ -167,7 +167,6 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController, 
     override fun exit() {
         Handler().post { theGame.dispose() }
         super.exit()
-
     }
 
     private fun showLoadingView() {
