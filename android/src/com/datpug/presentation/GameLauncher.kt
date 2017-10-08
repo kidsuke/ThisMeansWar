@@ -153,6 +153,12 @@ class GameLauncher : AndroidApplication(), ServiceConnection, RemoteController {
             ).addTo(disposables)
     }
 
+    override fun exit() {
+        Handler().post { theGame.dispose() }
+        super.exit()
+
+    }
+
     private fun showLoadingView() {
         addContentView(loadingView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         loadingView.bringToFront()

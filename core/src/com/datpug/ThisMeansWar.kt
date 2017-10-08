@@ -23,9 +23,9 @@ class ThisMeansWar(val arRenderer: ARRenderer): ApplicationAdapter() {
         arRenderer.addOnARRenderListener(arDetectListener)
 
         // Initialize controllers
-        ChallengeController.create()
         PlayerController.create()
         MonsterController.create()
+        ChallengeController.create()
 
         // Load assets
         GameAssets.loadAssets()

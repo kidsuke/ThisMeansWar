@@ -96,7 +96,7 @@ object PlayerController : ApplicationListener {
         })
 
         // Set listener for input processor
-        Gdx.input.inputProcessor = GestureDetector(GameGestureListener())
+        InputProcessor.addProccessor(GestureDetector(GameGestureListener()))
     }
 
     override fun resize(width: Int, height: Int) {}
@@ -129,7 +129,7 @@ object PlayerController : ApplicationListener {
         spriteBatch.dispose()
         shapeRenderer.dispose()
         disposables.dispose()
-        remoteController?.stopRemoteControl()
+        if (remoteControl) remoteController?.stopRemoteControl()
     }
 
     fun healthBonus(bonus: Float) {

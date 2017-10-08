@@ -8,7 +8,10 @@ import com.badlogic.gdx.graphics.g2d.*
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.math.MathUtils
+import com.badlogic.gdx.scenes.scene2d.InputEvent
+import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.utils.Array
 import com.datpug.entity.Direction
 
@@ -78,10 +81,14 @@ object ChallengeController: ApplicationListener {
         okButton = TextButton("OK", buttonStyle)
         okButton.x = Gdx.graphics.width.toFloat() / 2 - okButton.width / 2
         okButton.y = Gdx.graphics.height.toFloat() / 2 - okButton.height / 2 - gameOverFontHeight - 50f
-        okButton.addListener {
-            Gdx.app.exit()
-            false
-        }
+        okButton.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                Gdx.app.exit()
+            }
+        })
+        val stage = Stage()
+        stage.addActor(okButton)
+        InputProcessor.addProccessor(stage)
 
         // ANIMATIONS
         // A dog running anim represent s time for challenge
