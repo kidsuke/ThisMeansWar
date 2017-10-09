@@ -30,4 +30,4 @@ Clone this github repository and run it on your android device. Make sure that a
 
 ### LINK TO DOCUMENT
 -Testing and UI/UX document:
-https://drive.google.com/open?id=0B90vzhylZQGYM3FJVGxoN09mWWM
+https://docs.google.com/document/d/1lcgsu7gCGGpcjlOpV7Sy0_V19pHsM3ojsT-HPlRLNBQ/edit?usp=sharing
