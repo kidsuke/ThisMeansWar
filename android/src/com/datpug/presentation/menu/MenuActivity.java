@@ -1,10 +1,14 @@
 package com.datpug.presentation.menu;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.animation.Animation;
@@ -19,6 +23,7 @@ import com.datpug.presentation.GameLauncher;
 import java.io.IOException;
 
 public class MenuActivity extends AppCompatActivity {
+    public static final int PERMISSION_ALL = 100;
     private MediaPlayer mediaPlayer;
 
     @Override
@@ -39,6 +44,8 @@ public class MenuActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        requestPermissions();
     }
 
     @Override
@@ -74,5 +81,23 @@ public class MenuActivity extends AppCompatActivity {
 
     public void goToSetting() {
         getSupportFragmentManager().beginTransaction().replace(R.id.fragmentContainer, new SettingFragment()).addToBackStack(null).commit();
+    }
+
+    public void requestPermissions() {
+        String[] permissions = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+        if (!hasPermissions(permissions)) {
+            ActivityCompat.requestPermissions(this, permissions, PERMISSION_ALL);
+        }
+    }
+
+    public boolean hasPermissions(String... permissions) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && permissions != null) {
+            for (String permission : permissions) {
+                if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
