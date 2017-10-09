@@ -18,7 +18,7 @@ Puppies vs monster is a single player memory game where cute puppies fight hideo
 
 ### INSTALATION
 
-Clone this github repository and run on your android device
+Clone this github repository and run it on your android device. In the first installation, the app may encounter black screen problem after you press Play since it needs some permissions to access Android device and this somehow affects the rendering stuff. If you meet this case, just stop and re-run it again. Also make sure that all the permissions the app needs are granted.
 
 ### CONNECT EXTERNAL SENSOR
 
